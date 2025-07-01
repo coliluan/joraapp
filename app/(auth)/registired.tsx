@@ -12,6 +12,9 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+// const API_URL = 'https://0a3b-37-26-70-134.ngrok-free.app';
+import { API_URL } from 'react-native-dotenv'; // Import from .env file
+
 
 const RegisterScreen = () => {
   const { t } = useTranslation();
@@ -79,7 +82,7 @@ const RegisterScreen = () => {
     }
   
     try {
-      const response = await fetch('http://192.168.50.173:3000/api/register', {
+      const response = await fetch(`${API_URL}/api/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

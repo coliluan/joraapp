@@ -72,6 +72,7 @@
       "typedRoutes": true
     },
     "extra": {
+      "apiUrl": "https://wild-cat-1234.ngrok.io",
       "router": {},
       "eas": {
         "projectId": "10d2bf05-f514-495b-bad9-5580e3dd0c87"
