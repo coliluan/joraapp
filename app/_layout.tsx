@@ -1,29 +1,68 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTranslation } from 'react-i18next';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  if (!loaded) {
-    // Async font loading only occurs in development.
-    return null;
-  }
-
+    const { t } = useTranslation();
+  
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <Stack initialRouteName="onboarding" >
+      <Stack.Screen options={{ headerShown: false }}  name="onboarding"  />
+      <Stack.Screen options={{ headerShown: false }}  name="index"   />
+      <Stack.Screen options={{ headerShown: false }}  name="(tabs)" />
+      <Stack.Screen options={{ 
+         title: t('logIn'),
+         headerShown: true,
+         headerTitleAlign: 'center',
+         headerTintColor: '#171717',
+         headerTitleStyle: { fontWeight: '500' },
+         gestureEnabled: true,
+         headerBackVisible: true, // titulli ne app bar left
+        headerBackTitle: '',  // titulli ne app bar left
+        }}  
+         name="(auth)/logIn" />
+      <Stack.Screen 
+      options={{
+        title: t('register'),
+        headerShown: true,
+        headerTitleAlign: 'center',
+        headerTintColor: '#171717',
+        headerTitleStyle: { fontWeight: '500' },
+        gestureEnabled: true,
+        headerBackVisible: true, // titulli ne app bar left
+        headerBackTitle: '',  // titulli ne app bar left
+        }}  
+        name="(auth)/registired" />
+      <Stack.Screen options={{ 
+        title: 'Ndrysho Profilin',
+        headerShown: true,
+        headerTitleAlign: 'center',
+        headerTintColor: '#171717',
+        headerTitleStyle: { fontWeight: '500' },
+        gestureEnabled: true,
+        headerBackVisible: false,
+        // animation: 'slide_from_bottom',
+        headerBackTitle: '',
+         }}  name="(auth)/profile/edit_screen"/>
+      <Stack.Screen options={{
+          title: t('placeHolder'),
+          headerShown: true,
+          headerTitleAlign: 'center',
+          headerTintColor: '#171717',
+          headerTitleStyle: { fontWeight: '500' },
+          gestureEnabled: true,
+          headerBackVisible: false, // titulli ne app bar left
+          headerBackTitle: '',  // titulli ne app bar left
+        }}  name="(auth)/profile/password"/>
+      <Stack.Screen options={{ 
+         title: t('profile.lang'),
+         headerShown: true,
+         headerTitleAlign: 'center',
+         headerTintColor: '#171717',
+         headerTitleStyle: { fontWeight: '500' },
+         gestureEnabled: true,
+         headerBackVisible: false, // titulli ne app bar left
+         headerBackTitle: '',  // titulli ne app bar left
+       }}  name="(auth)/profile/language"/>
+    </Stack>
   );
 }
