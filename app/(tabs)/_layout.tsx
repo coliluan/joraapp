@@ -106,7 +106,10 @@ const Layout = () => {
         }}
       />
       <Tabs.Screen name="profile/edit_screen" options={{ href: null }} />
-      <Tabs.Screen name="profile/cities" options={{ href: null }} />
+      <Tabs.Screen name="profile/cities" 
+      options={{ 
+        href: null,
+        }} />
       <Tabs.Screen name="profile/password" options={{ href: null }} />
       <Tabs.Screen name="profile/language" options={{ href: null }} />
       <Tabs.Screen name="profile/delete_account" options={{ href: null }} />

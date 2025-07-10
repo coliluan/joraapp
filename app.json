@@ -29,7 +29,12 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "NOTIFICATIONS",
+        "POST_NOTIFICATIONS",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "READ_MEDIA_IMAGES"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -66,7 +71,8 @@
         }
       ],
       "expo-font",
-      "expo-barcode-scanner"
+      "expo-barcode-scanner",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true

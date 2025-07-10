@@ -11,10 +11,8 @@ const CitiesScreen = () => {
 
   const handleSelectCity = async (city: string) => {
     await AsyncStorage.setItem('selectedCity', city);
-    if (from === 'edit') {
+    if (from === 'edit' || from === 'register') {
       router.back(); 
-    } else {
-      router.push('/(auth)/registired');
     }
   };
   

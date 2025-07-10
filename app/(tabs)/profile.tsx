@@ -40,7 +40,7 @@ const ProfileScreen = () => {
           if (parsed.photo) setProfileImage(parsed.photo);
 
           const response = await fetch(
-            `http://192.168.50.173:3000/api/user/${parsed.firstName}`
+            `https://joracenterapp-3.onrender.com/api/user/${parsed.firstName}`
             // `http://localhost:3000/api/user/${parsed.firstName}`
 
           );
@@ -83,7 +83,7 @@ const ProfileScreen = () => {
 
         if (userName) {
           const res = await fetch(
-            'http://192.168.50.173:3000/api/user/photo',
+            'https://joracenterapp-3.onrender.com/api/user/photo',
             // 'http://localhost:3000/api/user/photo',
 
             {
@@ -116,39 +116,24 @@ const ProfileScreen = () => {
     }
   };
 
-  const handleDeleteUser = async () => {
+  const handleLogOutUser = async () => {
     try {
       const userData = await AsyncStorage.getItem('loggedInUser');
       if (!userData) {
         Alert.alert('Gabim', 'Nuk u gjet përdoruesi.');
         return;
       }
-      const parsed = JSON.parse(userData);
-      const userId = parsed._id;
-      const response = await fetch(
-        `http://192.168.50.173:3000/api/user/${userId}`,
-        // `http://localhost:3000/api/user/${userId}`,
-
-        {
-          method: 'DELETE',
-        }
-      );
-
-      const result = await response.json();
-
-      if (response.ok) {
-        await AsyncStorage.removeItem('loggedInUser');
-        Alert.alert('Sukses', 'Llogaria u fshi me sukses');
-        router.replace('/');
-      } else {
-        Alert.alert('Gabim', result.message || 'Fshirja dështoi.');
-      }
+  
+      await AsyncStorage.removeItem('loggedInUser');
+  
+      Alert.alert('Sukses', 'U çkyçët me sukses.');
+      router.replace('/');
     } catch (error) {
-      console.error('❌ Gabim gjatë fshirjes së llogarisë:', error);
-      Alert.alert('Gabim', 'Ndodhi një gabim gjatë fshirjes.');
+      console.error('❌ Gabim gjatë çkyçjes:', error);
+      Alert.alert('Gabim', 'Ndodhi një gabim gjatë çkyçjes.');
     }
   };
-
+  
   const options = [
     {
       label: t('profile.profile'),
@@ -217,7 +202,7 @@ const ProfileScreen = () => {
                     style={styles.icon}
                   />
                 </View>
-                <Text style={styles.optionText}>{t('delete')}</Text>
+                <Text style={styles.optionText}>{t('logout')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -231,9 +216,9 @@ const ProfileScreen = () => {
         <Portal>
           <Dialog style={styles.modal} visible={visible} onDismiss={hideDialog}>
             <Dialog.Icon icon="alert" />
-            <Dialog.Title style={styles.dialogTitle}>{t('modalDelete')}</Dialog.Title>
+            <Dialog.Title style={styles.dialogTitle}>{t('modalRemove')}</Dialog.Title>
             <Dialog.Content>
-              <Text style={styles.dialogText}>{t('titleModal')}</Text>
+              <Text style={styles.dialogText}>{t('titleRemoveModal')}</Text>
             </Dialog.Content>
             <Dialog.Actions>
               <Button style={styles.dialogButton} onPress={hideDialog}>{t('no')}</Button>
@@ -241,7 +226,7 @@ const ProfileScreen = () => {
                 style={styles.buttonDialog}
                 onPress={() => {
                   hideDialog();
-                  handleDeleteUser();
+                  handleLogOutUser();
                 }}
               >
                 {t('yes')}

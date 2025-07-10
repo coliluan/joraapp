@@ -68,21 +68,23 @@ const handleDeleteUser = async () => {
       Alert.alert('Gabim', 'Nuk u gjet përdoruesi.');
       return;
     }
+
     const parsed = JSON.parse(userData);
     const userId = parsed._id;
+
     const response = await fetch(
-      // `http://localhost:3000/api/user/${userId}`
-    `http://192.168.50.173:3000/api/user/${userId}`
-      , {
-      method: 'DELETE',
-    });
+      `https://joracenterapp-3.onrender.com/api/user/${userId}`,
+      {
+        method: 'DELETE',
+      }
+    );
 
     const result = await response.json();
 
     if (response.ok) {
-      await AsyncStorage.removeItem('loggedInUser');
+      await AsyncStorage.multiRemove(['loggedInUser', 'selectedCity']); // 🔥 fshij edhe selectedCity
       Alert.alert('Sukses', 'Llogaria u fshi me sukses');
-      router.replace('/'); 
+      router.replace('/');
     } else {
       Alert.alert('Gabim', result.message || 'Fshirja dështoi.');
     }
@@ -91,6 +93,7 @@ const handleDeleteUser = async () => {
     Alert.alert('Gabim', 'Ndodhi një gabim gjatë fshirjes.');
   }
 };
+
 
 const EditScreen = () => {
     const { t } = useTranslation();
@@ -116,7 +119,7 @@ const EditScreen = () => {
 
       const response = await fetch(
         // `http://localhost:3000/api/user/${userFirstName}`
-        `http://192.168.50.173:3000/api/user/${userFirstName}`
+        `https://joracenterapp-3.onrender.com/api/user/${userFirstName}`
 
 
         
@@ -147,7 +150,7 @@ const EditScreen = () => {
 
       const res = await fetch(
         // 'http://localhost:3000/api/user/address',
-        `http://192.168.50.173:3000/api/user/address`,
+        `https://joracenterapp-3.onrender.com/api/user/address`,
 
         {
         method: 'PUT',

@@ -8,8 +8,12 @@ const en = {
   no: "No, cancel.",
   yes: "Yes",
   delete: "Delete account",
+  logout: "Log Out",
   modalDelete: "Account deletion",
+  modalRemove: "Log Out",
   titleModal: "Are you sure you want to delete your account?",
+  titleRemoveModal: "Are you sure you want to log out of your account?",
+
   languages: {
     al: "Albanian",
     en: "English",

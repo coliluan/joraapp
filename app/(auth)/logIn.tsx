@@ -16,7 +16,7 @@ import { Button } from 'react-native-paper';
 
 const LogInScreen = () => {
   const { t } = useTranslation();
-  
+
   const [formData, setFormData] = useState({
     firstName: '',
     password: '',
@@ -27,77 +27,70 @@ const LogInScreen = () => {
     setFormData({ ...formData, [field]: value });
   };
 
+
   const handleLogin = async () => {
     try {
-      const response = await fetch('http://192.168.50.173:3000/api/login', {
+      const response = await fetch('https://joracenterapp-3.onrender.com/api/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-  
+
       const data = await response.json();
-  
       if (!response.ok) {
         Alert.alert('Gabim', data.message || 'Kredencialet janë të pasakta');
       } else {
-        // Save user data including barcode in AsyncStorage
         await AsyncStorage.setItem('loggedInUser', JSON.stringify(data.user));
-  
+
+
         Alert.alert('Sukses', 'Jeni identifikuar me sukses');
-        router.push('/(tabs)/home'); // Redirect to home or wherever you need
+        router.replace('/(tabs)/home');
       }
     } catch (error) {
       Alert.alert('Gabim', 'Nuk u lidh me serverin');
       console.error('Login error:', error);
     }
   };
-  
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <View style= {styles.custom}>
-      <TextInput 
-      style={styles.input} 
-      placeholder={t('name')}
-      placeholderTextColor="#rgba(31, 31, 31, 1)" 
-      value={formData.firstName}
-      onChangeText={(text) => handleInputChange('firstName', text)}
-      />
-      <View style={styles.passwordContainer}>
+      <View style={styles.custom}>
         <TextInput
-          style={styles.passwordInput}
-          placeholder={t('placeHolder')}
-          secureTextEntry={!passwordVisible}
-          placeholderTextColor="#rgba(31, 31, 31, 1)"
-          value={formData.password}
-          onChangeText={(text) => handleInputChange('password', text)}
+          style={styles.input}
+          placeholder={t('name')}
+          placeholderTextColor="#1F1F1F"
+          value={formData.firstName}
+          onChangeText={(text) => handleInputChange('firstName', text)}
         />
-        <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
-          <Image
-            source={require('../../assets/images/eyeIcon.png')}
-            style={styles.eyeIcon}
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder={t('placeHolder')}
+            secureTextEntry={!passwordVisible}
+            placeholderTextColor="#1F1F1F"
+            value={formData.password}
+            onChangeText={(text) => handleInputChange('password', text)}
           />
-        </TouchableOpacity>
+          <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
+            <Image
+              source={require('../../assets/images/eyeIcon.png')}
+              style={styles.eyeIcon}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
-      </View>
-      
+
       <View style={styles.bottomSection}>
-
-      <Button
-        mode="contained"
-        onPress={handleLogin}
-        style={styles.registerButton}
-        labelStyle={styles.buttonText}
-      >
-        {t('logIn')}
-      </Button>
-
+        <Button
+          mode="contained"
+          onPress={handleLogin}
+          style={styles.registerButton}
+          labelStyle={styles.buttonText}
+        >
+          {t('logIn')}
+        </Button>
       </View>
-      
     </ScrollView>
-    
   );
 };
 
@@ -111,19 +104,19 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   custom: {
-    gap:20,
+    gap: 20,
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 1)',
+    backgroundColor: '#FFFFFF',
     height: 60,
     paddingHorizontal: 20,
     paddingVertical: 10,
     fontSize: 18,
-    color: '#rgba(31, 31, 31, 1)',
+    color: '#1F1F1F',
   },
   passwordContainer: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderRadius: 5,
     alignItems: 'center',
     height: 60,
@@ -141,22 +134,20 @@ const styles = StyleSheet.create({
     tintColor: '#999',
   },
   registerButton: {
-    backgroundColor: '#rgba(235, 35, 40, 1)',
+    backgroundColor: '#EB2328',
     height: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 0,
     width: 180,
   },
   buttonText: {
-    color: '#rgba(255, 255, 255, 1)',
+    color: '#FFF',
     fontSize: 20,
-    fontFamily: 'Poppins',
     fontWeight: '500',
   },
   bottomSection: {
     alignItems: 'center',
-  }
+  },
 });
 
 export default LogInScreen;

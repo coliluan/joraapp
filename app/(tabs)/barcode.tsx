@@ -33,7 +33,7 @@ const Barcode = () => {
     fetchUser();
   }, []);
 
-  const barcodeUrl = `http://192.168.50.173:3000/api/barcode/${barcode}`;
+  const barcodeUrl = `https://joracenterapp-3.onrender.com/api/barcode/${barcode}`;
 
 
   return (

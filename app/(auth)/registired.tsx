@@ -1,6 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import Constants from 'expo-constants';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -10,16 +13,16 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
-// const API_URL = 'https://0a3b-37-26-70-134.ngrok-free.app';
-import { API_URL } from 'react-native-dotenv'; // Import from .env file
-
+import PhoneInput from 'react-native-phone-number-input';
 
 const RegisterScreen = () => {
   const { t } = useTranslation();
-  const { selectedCity } = useLocalSearchParams(); 
-
+  const { selectedCity } = useLocalSearchParams<{ selectedCity?: string }>();
+  const phoneInput = useRef<PhoneInput>(null);
+  const [value, setValue] = useState('');
+  const [valid, setValid] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -27,67 +30,59 @@ const RegisterScreen = () => {
     confirmPassword: '',
     city: selectedCity || '',
     number: '',
+    expoPushToken: '',
   });
 
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
-  useEffect(() => {
-    const loadFormData = async () => {
-      try {
-        const savedFormData = await AsyncStorage.getItem('registerFormData');
-        const selectedCity = await AsyncStorage.getItem('selectedCity');
-
-        if (savedFormData) {
-          setFormData(JSON.parse(savedFormData));
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadSelectedCity = async () => {
+        try {
+          const city = await AsyncStorage.getItem('selectedCity');
+          if (city) {
+            setFormData((prev) => ({ ...prev, city }));
+            await AsyncStorage.removeItem('selectedCity');
+          }
+        } catch (error) {
+          console.error('Error loading city:', error);
         }
-
-        if (selectedCity) {
-          setFormData((prev) => ({ ...prev, city: selectedCity }));
-        }
-        await AsyncStorage.removeItem('selectedCity');
-      } catch (error) {
-        console.error('Error loading form data:', error);
-      }
-    };
-
-    loadFormData();
-  }, []);
-
-  useEffect(() => {
-    const saveFormData = async () => {
-      try {
-        await AsyncStorage.setItem('registerFormData', JSON.stringify(formData));
-      } catch (error) {
-        console.error('Error saving form data:', error);
-      }
-    };
-    saveFormData();
-  }, [formData]);
+      };
+      loadSelectedCity();
+    }, [])
+  );
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData({ ...formData, [field]: value });
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-
   const handleRegister = async () => {
-    if (!formData.firstName || !formData.lastName || !formData.password || !formData.confirmPassword || !formData.city || !formData.number) {
+    const { firstName, lastName, password, confirmPassword, city, number } = formData;
+  
+    if (!firstName || !lastName || !password || !confirmPassword || !city || !number) {
       Alert.alert('Gabim', 'Të gjitha fushat janë të detyrueshme');
       return;
     }
   
-    if (formData.password !== formData.confirmPassword) {
+    if (password !== confirmPassword) {
       Alert.alert('Gabim', 'Fjalëkalimet nuk përputhen');
       return;
     }
   
     try {
-      const response = await fetch(`${API_URL}/api/register`, {
+      const token = await getExpoPushToken();
+      if (!token) {
+        Alert.alert('Gabim', 'Nuk u gjenerua token-i për push notifications');
+        return;
+      }
+  
+      const updatedFormData = { ...formData, expoPushToken: token };
+  
+      const response = await fetch('https://joracenterapp-3.onrender.com/api/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedFormData),
       });
   
       const data = await response.json();
@@ -96,7 +91,6 @@ const RegisterScreen = () => {
         Alert.alert('Gabim', data.message || 'Dicka shkoi keq');
       } else {
         Alert.alert('Sukses', data.message);
-  
         if (data.user) {
           await AsyncStorage.setItem('loggedInUser', JSON.stringify(data.user));
         }
@@ -108,12 +102,11 @@ const RegisterScreen = () => {
           confirmPassword: '',
           city: '',
           number: '',
+          expoPushToken: '',
         });
   
-        await AsyncStorage.removeItem('selectedCity');
-        await AsyncStorage.removeItem('registerFormData');
-  
-        router.push('/logIn');
+        await AsyncStorage.multiRemove(['selectedCity', 'registerFormData']);
+        router.replace('/logIn');
       }
     } catch (error) {
       Alert.alert('Gabim', 'Nuk u lidh me serverin');
@@ -121,7 +114,34 @@ const RegisterScreen = () => {
     }
   };
   
+
+  const getExpoPushToken = async () => {
+    if (!Device.isDevice) {
+      Alert.alert('Duhet pajisje fizike për push notifications');
+      return;
+    }
   
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+  
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+  
+    if (finalStatus !== 'granted') {
+      Alert.alert('Nuk ke leje për push notifications');
+      return;
+    }
+  
+    const tokenData = await Notifications.getExpoPushTokenAsync({
+      projectId: Constants.expoConfig?.extra?.eas?.projectId,
+    });
+
+    return tokenData.data;
+  };
+  
+
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <View>
@@ -139,7 +159,6 @@ const RegisterScreen = () => {
           value={formData.lastName}
           onChangeText={(text) => handleInputChange('lastName', text)}
         />
-
         <View style={styles.passwordContainer}>
           <TextInput
             style={styles.passwordInput}
@@ -156,7 +175,6 @@ const RegisterScreen = () => {
             />
           </TouchableOpacity>
         </View>
-
         <View style={styles.passwordContainer}>
           <TextInput
             style={styles.passwordInput}
@@ -173,21 +191,43 @@ const RegisterScreen = () => {
             />
           </TouchableOpacity>
         </View>
+
         <TouchableOpacity
-          
-          onPress={() => router.push('/(auth)/profile/cities')}
+          style={styles.inputCity}
+          onPress={() =>
+            router.push({ pathname: '/(auth)/profile/cities', params: { from: 'register' } })
+          }
         >
-          <Text style={styles.input}>{formData.city || t('edit.selectCity')}</Text>
+          <Text style={styles.cityInput}>{formData.city || t('edit.selectCity')}</Text>
         </TouchableOpacity>
 
-        <TextInput
-          style={styles.input}
-          placeholder={t('phone')}
-          placeholderTextColor="#1F1F1F"
-          value={formData.number}
-          onChangeText={(text) => handleInputChange('number', text)}
-          keyboardType="phone-pad"
+        <PhoneInput
+          ref={phoneInput}
+          defaultValue={value}
+          defaultCode="XK"
+          layout="first"
+          onChangeText={setValue}
+          onChangeFormattedText={(formattedText) => {
+            const checkValid = phoneInput.current?.isValidNumber(formattedText);
+            setValid(checkValid ?? false);
+
+            if (checkValid) {
+              const fullNumber =
+                phoneInput.current?.getNumberAfterPossiblyEliminatingZero()?.formattedNumber ?? '';
+              handleInputChange('number', fullNumber);
+            } else {
+              handleInputChange('number', '');
+            }
+          }}
+          containerStyle={styles.phoneContainer}
+          textContainerStyle={styles.phoneTextContainer}
+          textInputStyle={styles.phoneTextInput}
+          flagButtonStyle={styles.flagButtonStyle}
+          codeTextStyle={styles.codeTextStyle}
+          placeholder="Enter your phone number"
         />
+
+        <Text>Valid : {valid ? 'true' : 'false'}</Text>
       </View>
 
       <View style={styles.bottomSection}>
@@ -207,7 +247,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     flexGrow: 1,
     gap: 20,
-    height: '100%',
+    height: 850,
   },
   input: {
     backgroundColor: '#FFF',
@@ -217,6 +257,42 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#1F1F1F',
     marginBottom: 10,
+  },
+  inputCity: {
+    height: 60,
+    marginBottom: 10,
+    padding: 19,
+    backgroundColor: '#FFF',
+  },
+  cityInput: {
+    fontSize: 18,
+  },
+  phoneContainer: {
+    backgroundColor: '#FFF',
+    height: 60,
+    borderRadius: 5,
+    marginBottom: 10,
+    width: '100%',
+  },
+  phoneTextContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: 5,
+    paddingVertical: 10,
+    paddingLeft: 10,
+  },
+  phoneTextInput: {
+    fontSize: 18,
+    color: '#1F1F1F',
+  },
+  flagButtonStyle: {
+    width: 40,
+    justifyContent: 'flex-start',
+    paddingLeft: 24,
+  },
+  codeTextStyle: {
+    fontSize: 18,
+    color: '#1F1F1F',
+    marginRight: 10,
   },
   passwordContainer: {
     flexDirection: 'row',

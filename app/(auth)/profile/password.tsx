@@ -89,7 +89,7 @@ const PassWordScreen = () => {
     try {
       const response = await fetch(
         // 'http://localhost:3000/api/user/password'
-        'http://192.168.50.173:3000/api/user/password'
+        'https://joracenterapp-3.onrender.com/api/user/password'
         
         , {
         method: 'PUT',
