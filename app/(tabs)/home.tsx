@@ -184,7 +184,7 @@ const HomeScreen = () => {
 
   const handleTestNotification = async () => {
     if (!pushToken || !parsedUser) {
-      Alert.alert('Gabim', 'Tokeni ose të dhënat e përdoruesit mungojnë.');
+      console.log('Token or user data missing');
       return;
     }
 

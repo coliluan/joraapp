@@ -5,6 +5,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Platform,
@@ -16,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import { ENDPOINTS, getApiUrl } from '../config/api';
+
 const RegisterScreen = () => {
   const { t } = useTranslation();
   const { selectedCity } = useLocalSearchParams<{ selectedCity?: string }>();
@@ -29,7 +31,7 @@ const RegisterScreen = () => {
     number: '',
     expoPushToken: '',
   });
-
+  const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
@@ -54,44 +56,48 @@ const RegisterScreen = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleRegister = async () => {
+  const validateInputs = () => {
     const { firstName, lastName, password, confirmPassword, city, number } = formData;
-  
     if (!firstName || !lastName || !password || !confirmPassword || !city || !number) {
-      Alert.alert('Gabim', 'Të gjitha fushat janë të detyrueshme');
-      return;
+      return 'Të gjitha fushat janë të detyrueshme';
     }
-  
     if (password !== confirmPassword) {
-      Alert.alert('Gabim', 'Fjalëkalimet nuk përputhen');
+      return 'Fjalëkalimet nuk përputhen';
+    }
+    // Password: min 6 karaktere (testim)
+    if (password.length < 6) {
+      return 'Fjalëkalimi duhet të ketë të paktën 6 karaktere.';
+    }
+    // Numri i telefonit: vetëm shifra, min 8 karaktere
+    if (!/^\d{8,}$/.test(number)) {
+      return 'Numri i telefonit duhet të ketë të paktën 8 shifra.';
+    }
+    return null;
+  };
+
+  const handleRegister = async () => {
+    const error = validateInputs();
+    if (error) {
+      Alert.alert('Gabim', error);
       return;
     }
-  
+    setLoading(true);
     try {
       const token = await getExpoPushToken();
-      if (!token) {
-        Alert.alert('Gabim', 'Nuk u gjenerua token-i për push notifications');
-        return;
-      }
-  
       const updatedFormData = { ...formData, expoPushToken: token };
-  
       const response = await fetch(getApiUrl(ENDPOINTS.REGISTER), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedFormData),
       });
-  
       const data = await response.json();
-  
       if (!response.ok) {
         Alert.alert('Gabim', data.message || 'Dicka shkoi keq');
       } else {
-        Alert.alert('Sukses', data.message);
+        Alert.alert('Sukses', 'Regjistrimi u krye me sukses!');
         if (data.user) {
           await AsyncStorage.setItem('loggedInUser', JSON.stringify(data.user));
         }
-  
         setFormData({
           firstName: '',
           lastName: '',
@@ -101,66 +107,42 @@ const RegisterScreen = () => {
           number: '',
           expoPushToken: '',
         });
-  
         await AsyncStorage.multiRemove(['selectedCity', 'registerFormData']);
         router.replace('/logIn');
       }
     } catch (error) {
       Alert.alert('Gabim', 'Nuk u lidh me serverin');
       console.error('Error:', error);
+    } finally {
+      setLoading(false);
     }
   };
-  
 
   const getExpoPushToken = async () => {
-    Alert.alert('Debug', 'getExpoPushToken called');
-    // Skip push notifications on web platform
     if (Platform.OS === 'web') {
-      Alert.alert('Debug', 'Web platform, skipping');
-      console.log('Push notifications not supported on web');
       return 'web-token-placeholder';
     }
-
     if (!Device.isDevice) {
-      Alert.alert('Debug', 'Not a physical device');
-      Alert.alert('Duhet pajisje fizike për push notifications');
-      return;
+      return 'device-token-placeholder';
     }
-  
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
-  
     if (existingStatus !== 'granted') {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
-  
     if (finalStatus !== 'granted') {
-      Alert.alert('Debug', 'No notification permission');
-      Alert.alert('Nuk ke leje për push notifications');
-      return;
+      return 'no-permission-token-placeholder';
     }
-  
-    const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId: '10d2bf05-f514-495b-bad9-5580e3dd0c87', // Your actual project ID from app.json
-    });
-    
-    // Show the token in a more visible alert with copy option
-    Alert.alert(
-      'Expo Push Token Generated!',
-      `Token: ${tokenData.data}\n\nThis token will be sent to the server for push notifications.`,
-      [
-        {
-          text: 'OK',
-          onPress: () => console.log('Token alert dismissed')
-        }
-      ]
-    );
-    
-    console.log('Expo Push Token:', tokenData.data);
-    return tokenData.data;
+    try {
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId: '10d2bf05-f514-495b-bad9-5580e3dd0c87',
+      });
+      return tokenData.data;
+    } catch (error) {
+      return 'error-token-placeholder';
+    }
   };
-  
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
@@ -211,7 +193,6 @@ const RegisterScreen = () => {
             />
           </TouchableOpacity>
         </View>
-
         <TouchableOpacity
           style={styles.inputCity}
           onPress={() =>
@@ -220,7 +201,6 @@ const RegisterScreen = () => {
         >
           <Text style={styles.cityInput}>{formData.city || t('edit.selectCity')}</Text>
         </TouchableOpacity>
-
         <TextInput
           style={styles.input}
           placeholder="Phone Number"
@@ -229,13 +209,18 @@ const RegisterScreen = () => {
           onChangeText={(text) => handleInputChange('number', text)}
           keyboardType="phone-pad"
         />
-
-
       </View>
-
       <View style={styles.bottomSection}>
-        <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
-          <Text style={styles.buttonText}>{t('register')}</Text>
+        <TouchableOpacity
+          style={[styles.registerButton, loading && { backgroundColor: '#ccc' }]}
+          onPress={handleRegister}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>{t('register')}</Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -248,91 +233,51 @@ const styles = StyleSheet.create({
     paddingVertical: 100,
     backgroundColor: '#FAFAFA',
     justifyContent: 'space-between',
-    flexGrow: 1,
-    gap: 20,
-    height: 850,
   },
   input: {
-    backgroundColor: '#FFF',
-    height: 60,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    fontSize: 18,
-    color: '#1F1F1F',
-    marginBottom: 10,
-  },
-  inputCity: {
-    height: 60,
-    marginBottom: 10,
-    padding: 19,
-    backgroundColor: '#FFF',
-  },
-  cityInput: {
-    fontSize: 18,
-  },
-  phoneContainer: {
-    backgroundColor: '#FFF',
-    height: 60,
-    borderRadius: 5,
-    marginBottom: 10,
-    width: '100%',
-  },
-  phoneTextContainer: {
-    backgroundColor: '#FFF',
-    borderRadius: 5,
-    paddingVertical: 10,
-    paddingLeft: 10,
-  },
-  phoneTextInput: {
-    fontSize: 18,
-    color: '#1F1F1F',
-  },
-  flagButtonStyle: {
-    width: 40,
-    justifyContent: 'flex-start',
-    paddingLeft: 24,
-  },
-  codeTextStyle: {
-    fontSize: 18,
-    color: '#1F1F1F',
-    marginRight: 10,
+    backgroundColor: '#F4F4F4',
+    padding: 12,
+    marginVertical: 8,
+    borderRadius: 6,
   },
   passwordContainer: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 5,
     alignItems: 'center',
-    height: 60,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginBottom: 10,
+    backgroundColor: '#F4F4F4',
+    borderRadius: 6,
+    marginVertical: 8,
   },
   passwordInput: {
     flex: 1,
-    fontSize: 18,
-    color: '#000',
+    padding: 12,
   },
   eyeIcon: {
-    width: 20,
-    height: 20,
-    tintColor: '#999',
+    width: 24,
+    height: 24,
+    marginHorizontal: 8,
+  },
+  inputCity: {
+    backgroundColor: '#F4F4F4',
+    padding: 12,
+    marginVertical: 8,
+    borderRadius: 6,
+  },
+  cityInput: {
+    color: '#1F1F1F',
+  },
+  bottomSection: {
+    marginTop: 30,
   },
   registerButton: {
     backgroundColor: '#EB2328',
-    height: 60,
-    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 8,
     alignItems: 'center',
-    borderRadius: 5,
-    width: 180,
   },
   buttonText: {
-    color: '#FFF',
-    fontSize: 20,
-    fontWeight: '500',
-  },
-  bottomSection: {
-    alignItems: 'center',
-    marginTop: 30,
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 

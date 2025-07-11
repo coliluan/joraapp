@@ -305,30 +305,25 @@ app.post('/api/store-token', async (req, res) => {
 app.post('/api/register', async (req, res) => {
   const { firstName, lastName, password, confirmPassword, city, number, role, expoPushToken } = req.body;
 
-  console.log('📝 Registration attempt:', { firstName, lastName, city, number, role });
-
-  if (!firstName || !lastName || !password || !confirmPassword || !city || !number || !expoPushToken) {
-    console.log('❌ Missing fields:', { firstName, lastName, password: !!password, confirmPassword: !!confirmPassword, city, number, expoPushToken: !!expoPushToken });
-    return res.status(400).json({ message: 'Të gjitha fushat, përfshirë push token-in, janë të detyrueshme.' });
+  // Validim bazik
+  if (!firstName || !lastName || !password || !confirmPassword || !city || !number) {
+    return res.status(400).json({ message: 'Të gjitha fushat janë të detyrueshme.' });
   }
 
   if (password !== confirmPassword) {
-    console.log('❌ Passwords do not match');
     return res.status(400).json({ message: 'Fjalëkalimet nuk përputhen.' });
   }
 
-  const passwordStrength = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
-  if (!passwordStrength.test(password)) {
-    console.log('❌ Password does not meet strength requirements');
-    return res.status(400).json({ message: 'Fjalëkalimi duhet të ketë të paktën 8 karaktere dhe një numër.' });
+  // Password: min 6 karaktere (testim)
+  if (password.length < 6) {
+    return res.status(400).json({ message: 'Fjalëkalimi duhet të ketë të paktën 6 karaktere.' });
   }
 
   try {
-    // Kontrollo nëse përdoruesi tashmë ekziston
-    const existingUser = await UserModel.findOne({ firstName });
+    // Kontrollo nëse përdoruesi ekziston sipas numrit të telefonit
+    const existingUser = await UserModel.findOne({ number });
     if (existingUser) {
-      console.log('❌ User already exists:', firstName);
-      return res.status(400).json({ message: 'Përdoruesi me këtë emër tashmë ekziston.' });
+      return res.status(400).json({ message: 'Ky numër telefoni është i regjistruar.' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -338,18 +333,15 @@ app.post('/api/register', async (req, res) => {
       firstName,
       lastName,
       password: hashedPassword,
-      email: `${firstName.toLowerCase()}@example.com`, // Email i rastësishëm për të shmangur duplicate key error
+      email: `${firstName.toLowerCase()}@example.com`, // Email placeholder
       city,
       number,
       barcode,
       role: role || 'user',
-      expoPushToken,
+      expoPushToken: expoPushToken || null,
     });
 
-    console.log('💾 Saving new user:', { firstName, lastName, city, number, role });
     await newUser.save();
-    console.log('✅ User saved successfully');
-    
     return res.status(200).json({ message: 'Regjistrimi u krye me sukses!', user: newUser });
   } catch (error) {
     console.error('❌ Error saving user:', error);
