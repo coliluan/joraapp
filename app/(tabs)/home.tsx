@@ -8,19 +8,21 @@ import * as Notifications from 'expo-notifications';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Alert,
-  Button,
-  FlatList,
-  Image,
-  Modal,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Button,
+    FlatList,
+    Image,
+    Modal,
+    Platform,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+import PdfThumbnail from '../components/PdfThumbnail';
+import { API_BASE } from '../config/api';
 
 // Lejo njoftimet të shfaqen edhe në lockscreen
 Notifications.setNotificationHandler({
@@ -28,10 +30,10 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
-
-const API_BASE = 'https://joracenterapp-3.onrender.com';
 
 const HomeScreen = () => {
   const { t } = useTranslation();
@@ -301,15 +303,7 @@ const HomeScreen = () => {
                 renderItem={({ item }) => (
                   <TouchableOpacity onPress={() => openPdfModal(item)} style={styles.cardImage}>
                     <View style={styles.pdfContainer}>
-                      <WebView
-                        key={isFocused ? `fullscreen-${selectedPdf?._id}` : `fullscreen-unfocused`}
-                        source={{ uri: `${API_BASE}/api/pdf/${item._id}` }}
-                        useWebKit
-                        startInLoadingState
-                        originWhitelist={['*']}
-                        style={{ borderRadius: 5, flex: 1 }}
-                        scrollEnabled={false}
-                      />
+                      <PdfThumbnail pdfId={item._id} />
                     </View>
                     <Text style={styles.pdfName}>
                       {item.customName || item.name || item.filename || 'Untitled PDF'}
@@ -332,7 +326,72 @@ const HomeScreen = () => {
                     title="Test Notification"
                     color="white"
                     onPress={handleTestNotification}
-
+                  />
+                </View>
+                <View style={[styles.button, { backgroundColor: 'blue' }]}>
+                  <Button
+                    title="Dërgo Push Notification"
+                    color="white"
+                    onPress={() => {
+                      Alert.prompt(
+                        'Push Notification',
+                        'Shkruani mesazhin:',
+                        [
+                          { text: 'Anulo', style: 'cancel' },
+                          {
+                            text: 'Dërgo',
+                            onPress: (message) => {
+                              if (message) {
+                                sendPushNotification(
+                                  pushToken,
+                                  'Mesazh nga Admin',
+                                  message
+                                );
+                                Alert.alert('Sukses', 'Push notification u dërgua!');
+                              }
+                            }
+                          }
+                        ],
+                        'plain-text'
+                      );
+                    }}
+                  />
+                </View>
+                <View style={[styles.button, { backgroundColor: 'purple' }]}>
+                  <Button
+                    title="Dërgo te Të Gjithë"
+                    color="white"
+                    onPress={() => {
+                      Alert.prompt(
+                        'Broadcast Notification',
+                        'Shkruani mesazhin për të gjithë përdoruesit:',
+                        [
+                          { text: 'Anulo', style: 'cancel' },
+                          {
+                            text: 'Dërgo',
+                            onPress: async (message) => {
+                              if (message) {
+                                try {
+                                  const response = await fetch(`${API_BASE}/api/notify`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      title: 'Mesazh nga Admin',
+                                      body: message
+                                    }),
+                                  });
+                                  const result = await response.json();
+                                  Alert.alert('Sukses', result.message);
+                                } catch (error) {
+                                  Alert.alert('Gabim', 'Nuk u dërgua push notification');
+                                }
+                              }
+                            }
+                          }
+                        ],
+                        'plain-text'
+                      );
+                    }}
                   />
                 </View>
               </>
@@ -378,6 +437,13 @@ const HomeScreen = () => {
                 startInLoadingState
                 originWhitelist={['*']}
                 style={{ flex: 1 }}
+                allowsInlineMediaPlayback={true}
+                mediaPlaybackRequiresUserAction={true}
+                allowsProtectedMedia={true}
+                onShouldStartLoadWithRequest={(request) => {
+                  // Parandalo shkarkimin automatik
+                  return true;
+                }}
               />
               <TouchableOpacity
                 onPress={() => setIsPdfModalVisible(false)}
@@ -502,6 +568,28 @@ const styles = StyleSheet.create({
     padding: 12,
     marginVertical: 8,
     borderRadius: 6,
+  },
+  pdfThumbnail: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  pdfIcon: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  pdfPreviewText: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+  },
+  pdfLoadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
   },
 });
 

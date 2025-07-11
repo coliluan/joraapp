@@ -11,7 +11,7 @@ export default function OnboardingScreen() {
     const showOnboarding = async () => {
       await new Promise(resolve => setTimeout(resolve, 5000)); // 5 seconds
       await AsyncStorage.setItem('hasSeenOnboarding', 'true');
-      router.replace('./index');
+      router.replace('/');
     };
 
     showOnboarding();

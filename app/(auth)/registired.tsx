@@ -1,13 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,14 +15,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import PhoneInput from 'react-native-phone-number-input';
-
+import { ENDPOINTS, getApiUrl } from '../config/api';
 const RegisterScreen = () => {
   const { t } = useTranslation();
   const { selectedCity } = useLocalSearchParams<{ selectedCity?: string }>();
-  const phoneInput = useRef<PhoneInput>(null);
-  const [value, setValue] = useState('');
-  const [valid, setValid] = useState(false);
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -79,7 +76,7 @@ const RegisterScreen = () => {
   
       const updatedFormData = { ...formData, expoPushToken: token };
   
-      const response = await fetch('https://joracenterapp-3.onrender.com/api/register', {
+      const response = await fetch(getApiUrl(ENDPOINTS.REGISTER), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedFormData),
@@ -116,7 +113,16 @@ const RegisterScreen = () => {
   
 
   const getExpoPushToken = async () => {
+    Alert.alert('Debug', 'getExpoPushToken called');
+    // Skip push notifications on web platform
+    if (Platform.OS === 'web') {
+      Alert.alert('Debug', 'Web platform, skipping');
+      console.log('Push notifications not supported on web');
+      return 'web-token-placeholder';
+    }
+
     if (!Device.isDevice) {
+      Alert.alert('Debug', 'Not a physical device');
       Alert.alert('Duhet pajisje fizike për push notifications');
       return;
     }
@@ -130,14 +136,28 @@ const RegisterScreen = () => {
     }
   
     if (finalStatus !== 'granted') {
+      Alert.alert('Debug', 'No notification permission');
       Alert.alert('Nuk ke leje për push notifications');
       return;
     }
   
     const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId: Constants.expoConfig?.extra?.eas?.projectId,
+      projectId: '10d2bf05-f514-495b-bad9-5580e3dd0c87', // Your actual project ID from app.json
     });
-
+    
+    // Show the token in a more visible alert with copy option
+    Alert.alert(
+      'Expo Push Token Generated!',
+      `Token: ${tokenData.data}\n\nThis token will be sent to the server for push notifications.`,
+      [
+        {
+          text: 'OK',
+          onPress: () => console.log('Token alert dismissed')
+        }
+      ]
+    );
+    
+    console.log('Expo Push Token:', tokenData.data);
     return tokenData.data;
   };
   
@@ -201,33 +221,16 @@ const RegisterScreen = () => {
           <Text style={styles.cityInput}>{formData.city || t('edit.selectCity')}</Text>
         </TouchableOpacity>
 
-        <PhoneInput
-          ref={phoneInput}
-          defaultValue={value}
-          defaultCode="XK"
-          layout="first"
-          onChangeText={setValue}
-          onChangeFormattedText={(formattedText) => {
-            const checkValid = phoneInput.current?.isValidNumber(formattedText);
-            setValid(checkValid ?? false);
-
-            if (checkValid) {
-              const fullNumber =
-                phoneInput.current?.getNumberAfterPossiblyEliminatingZero()?.formattedNumber ?? '';
-              handleInputChange('number', fullNumber);
-            } else {
-              handleInputChange('number', '');
-            }
-          }}
-          containerStyle={styles.phoneContainer}
-          textContainerStyle={styles.phoneTextContainer}
-          textInputStyle={styles.phoneTextInput}
-          flagButtonStyle={styles.flagButtonStyle}
-          codeTextStyle={styles.codeTextStyle}
-          placeholder="Enter your phone number"
+        <TextInput
+          style={styles.input}
+          placeholder="Phone Number"
+          placeholderTextColor="#1F1F1F"
+          value={formData.number}
+          onChangeText={(text) => handleInputChange('number', text)}
+          keyboardType="phone-pad"
         />
 
-        <Text>Valid : {valid ? 'true' : 'false'}</Text>
+
       </View>
 
       <View style={styles.bottomSection}>

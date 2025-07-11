@@ -25,14 +25,22 @@ i18n
 // Load the language preference from AsyncStorage and set it on i18n initialization
 const loadLanguagePreference = async () => {
   try {
-    const lang = await AsyncStorage.getItem('language');  // Get language from AsyncStorage
-    if (lang) {
-      i18n.changeLanguage(lang);  // Set the language if found
+    // Check if we're in a web environment and if window is available
+    if (typeof window !== 'undefined') {
+      const lang = await AsyncStorage.getItem('language');  // Get language from AsyncStorage
+      if (lang) {
+        i18n.changeLanguage(lang);  // Set the language if found
+      } else {
+        i18n.changeLanguage('al');  // Default to Albanian if no preference is found
+      }
     } else {
-      i18n.changeLanguage('al');  // Default to Albanian if no preference is found
+      // For non-web environments, set default language
+      i18n.changeLanguage('al');
     }
   } catch (error) {
     console.error('Error loading language preference:', error);
+    // Fallback to default language
+    i18n.changeLanguage('al');
   }
 };
 

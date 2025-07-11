@@ -55,7 +55,7 @@ export default function App() {
         <View style={styles.buttonContainer}>
           <Button
             mode="contained"
-            onPress={() => router.push('/registired')}
+            onPress={() => router.push('/(auth)/registired')}
             style={styles.registeredButton}
             labelStyle={styles.buttonText}
           >
@@ -63,7 +63,7 @@ export default function App() {
           </Button>
           <Button
             mode="outlined"
-            onPress={() => router.push('/logIn')}
+            onPress={() => router.push('/(auth)/logIn')}
             style={styles.logButton}
             labelStyle={[styles.buttonText, { color: '#D32F2F' }]}
           >
