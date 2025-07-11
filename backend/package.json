@@ -1,0 +1,31 @@
+{
+  "name": "backend-api",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "nodemon index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "body-parser": "^2.2.0",
+    "canvas": "^3.1.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "expo-server-sdk": "^3.15.0",
+    "express": "^5.1.0",
+    "firebase-admin": "^13.4.0",
+    "jsbarcode": "^3.12.1",
+    "mongoose": "^8.16.1",
+    "multer": "^2.0.1",
+    "node-fetch": "^3.3.2",
+    "path": "^0.12.7"
+  },
+  "description": "",
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
