@@ -168,7 +168,7 @@ const handleEmailPress = () => {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.innerContent}>
             <View style={styles.notification}>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/components/notificationModal')}>
                 <Image source={require('../../assets/images/notification.png')} />
               </TouchableOpacity>
             </View>

@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -26,7 +27,7 @@ const App = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.notification}>
-        <TouchableOpacity onPress={() => alert('Notifications clicked!')}>
+        <TouchableOpacity onPress={() => router.push('/components/notificationModal')}>
           <Image source={require('../../assets/images/notification.png')} />
         </TouchableOpacity>
       </View>

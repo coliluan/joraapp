@@ -4,6 +4,7 @@ import { useIsFocused } from '@react-navigation/native';
 import * as Device from 'expo-device';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Notifications from 'expo-notifications';
+import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -20,7 +21,6 @@ import {
   View
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-// import PdfThumbnail from '../components/PdfThumbnail';
 import { API_BASE } from '../config/api';
 
 // Lejo njoftimet të shfaqen edhe në lockscreen
@@ -49,8 +49,18 @@ const HomeScreen = () => {
   const [pickedPdfFile, setPickedPdfFile] = useState<any>(null);
   const [selectedPdf, setSelectedPdf] = useState<any>(null);
   const [isPdfModalVisible, setIsPdfModalVisible] = useState(false);
-  const [pushToken, setPushToken] = useState(''); 
-  const [parsedUser, setParsedUser] = useState<any>(null);
+
+  const saveNotificationToStorage = async (title: string, body: string) => {
+  try {
+    const existing = await AsyncStorage.getItem('storedNotifications');
+    const parsed = existing ? JSON.parse(existing) : [];
+    const updated = [{ title, body, date: new Date().toISOString() }, ...parsed];
+    await AsyncStorage.setItem('storedNotifications', JSON.stringify(updated));
+  } catch (error) {
+    console.error('Gabim gjatë ruajtjes së njoftimit:', error);
+  }
+};
+
 
   const registerForPushNotificationsAsync = async () => {
     try {
@@ -74,7 +84,6 @@ const HomeScreen = () => {
 
       const tokenData = await Notifications.getExpoPushTokenAsync();
       const expoPushToken = tokenData.data;
-      setPushToken(expoPushToken);
       console.log('Expo Push Token:', expoPushToken);
 
       if (Platform.OS === 'android') {
@@ -104,38 +113,12 @@ const HomeScreen = () => {
     }
   };
 
-  const sendPushNotification = async (expoPushToken: string, title: string, body: string) => {
-    const message = {
-      to: expoPushToken,
-      sound: 'default',
-      title,
-      body,
-      data: { someData: 'goes here' },
-    };
-
-    try {
-      await fetch('https://exp.host/--/api/v2/push/send', {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Accept-Encoding': 'gzip, deflate',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(message),
-      });
-      console.log('Push notification sent');
-    } catch (error) {
-      console.error('Error sending push notification:', error);
-    }
-  };
-
   useEffect(() => {
     const initialize = async () => {
       try {
         const userData = await AsyncStorage.getItem('loggedInUser');
         if (userData) {
           const parsed = JSON.parse(userData);
-          setParsedUser(parsed);
           setUserName(parsed.firstName);
           setNumber(parsed.number);
           setBarcode(parsed.barcode);
@@ -144,21 +127,6 @@ const HomeScreen = () => {
           const token = await registerForPushNotificationsAsync();
           if (token) {
             await sendPushTokenToBackend(parsed._id, token);
-          }
-
-          const adminToken = await fetch(`${API_BASE}/api/get-admin-tokens`)
-            .then((res) => res.json())
-            .then((data) => data.tokens)
-            .catch(() => []);
-
-          if (adminToken && adminToken.length > 0) {
-            for (const token of adminToken) {
-              await sendPushNotification(
-                token,
-                'Përdorues i ri u kyç',
-                `${parsed.firstName} sapo u kyç në aplikacion.`
-              );
-            }
           }
         }
 
@@ -181,21 +149,6 @@ const HomeScreen = () => {
     }
   }, [isFocused]);
 
-  const handleTestNotification = async () => {
-    if (!pushToken || !parsedUser) {
-      console.log('Token or user data missing');
-      return;
-    }
-
-    await sendPushNotification(
-      pushToken,
-      'Mirësevini!',
-      `Përshëndetje ${parsedUser.firstName}, shikoni ofertat e fundit per sot.`
-    );
-  };
-
-
-  
   const pickPDF = async () => {
     try {
       const res = await DocumentPicker.getDocumentAsync({ type: 'application/pdf' });
@@ -278,11 +231,11 @@ const HomeScreen = () => {
         ListHeaderComponent={
           <>
             <View style={styles.notification}>
-              <TouchableOpacity onPress={() => alert('Notifications clicked!')}>
-                <Image source={require('../../assets/images/notification.png')} />
-              </TouchableOpacity>
-            </View>
+              <TouchableOpacity onPress={() => router.push('/components/notificationModal')}>
+  <Image source={require('../../assets/images/notification.png')} />
+</TouchableOpacity>
 
+            </View>
             <View style={styles.header}>
               <Text style={styles.greeting}>
                 {t('home.title')} <Text style={styles.name}>{capitalizeFirstLetter(userName)}</Text>,
@@ -339,42 +292,7 @@ const HomeScreen = () => {
                 <View style={styles.button}>
                   <Button title="Ngarko një PDF" onPress={pickPDF} />
                 </View>
-                <View style={[styles.button, { backgroundColor: 'green' }]}>
-                  <Button
-                    title="Test Notification"
-                    color="white"
-                    onPress={handleTestNotification}
-                  />
-                </View>
-                <View style={[styles.button, { backgroundColor: 'blue' }]}>
-                  <Button
-                    title="Dërgo Push Notification"
-                    color="white"
-                    onPress={() => {
-                      Alert.prompt(
-                        'Push Notification',
-                        'Shkruani mesazhin:',
-                        [
-                          { text: 'Anulo', style: 'cancel' },
-                          {
-                            text: 'Dërgo',
-                            onPress: (message) => {
-                              if (message) {
-                                sendPushNotification(
-                                  pushToken,
-                                  'Mesazh nga Admin',
-                                  message
-                                );
-                                Alert.alert('Sukses', 'Push notification u dërgua!');
-                              }
-                            }
-                          }
-                        ],
-                        'plain-text'
-                      );
-                    }}
-                  />
-                </View>
+                
                 <View style={[styles.button, { backgroundColor: 'purple' }]}>
                   <Button
                     title="Dërgo te Të Gjithë"
@@ -394,12 +312,14 @@ const HomeScreen = () => {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
-                                      title: 'Mesazh nga Admin',
+                                      title: 'Jora Center',
                                       body: message
                                     }),
                                   });
                                   const result = await response.json();
                                   Alert.alert('Sukses', result.message);
+                                  await saveNotificationToStorage('Jora Center', message);
+
                                 } catch (error) {
                                   Alert.alert('Gabim', 'Nuk u dërgua push notification');
                                 }
@@ -442,6 +362,7 @@ const HomeScreen = () => {
             </View>
           </View>
         </Modal>
+        
       )}
 
       {/* Modal për shfaqje PDF në fullscreen */}

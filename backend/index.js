@@ -8,6 +8,7 @@ import express from 'express';
 import JsBarcode from 'jsbarcode';
 import mongoose from 'mongoose';
 import multer from 'multer';
+import NotificationModel from '../backend/models/Notification.model.js';
 
 import { Expo } from 'expo-server-sdk';
 import fetch from 'node-fetch';
@@ -188,6 +189,8 @@ app.post('/api/notify', async (req, res) => {
 
     const results = [];
 
+    await NotificationModel.create({ title, body });
+
     for (const user of users) {
       console.log(`📤 Sending notification to ${user.firstName} (${user.expoPushToken})`);
       const result = await sendPushNotification(user.expoPushToken, title, body);
@@ -195,12 +198,32 @@ app.post('/api/notify', async (req, res) => {
       results.push(result);
     }
 
+    const uniqueTokens = new Set();
+   const uniqueUsers = users.filter(user => {
+   if (!user.expoPushToken || uniqueTokens.has(user.expoPushToken)) return false;
+   uniqueTokens.add(user.expoPushToken);
+   return true;
+  });
+
+
     return res.status(200).json({ message: `Notifikimi u dërgua te ${users.length} përdorues.`, results });
   } catch (error) {
     console.error('❌ Error sending notifications:', error);
     return res.status(500).json({ message: 'Gabim gjatë dërgimit të notifikimeve.' });
   }
 });
+
+app.get('/api/notifications', async (req, res) => {
+  try {
+    const notifications = await NotificationModel.find().sort({ sentAt: -1 });
+    res.status(200).json(notifications); // kjo dërgon array
+  } catch (error) {
+    console.error('❌ Error loading notifications:', error);
+    res.status(500).json({ message: 'Gabim gjatë leximit të njoftimeve.' });
+  }
+});
+
+
 
 // Test endpoint për një token specifik
 app.post('/api/test-notification', async (req, res) => {
@@ -287,9 +310,13 @@ app.post('/api/store-token', async (req, res) => {
   }
 
   try {
-    const user = await UserModel.findByIdAndUpdate(userId, { expoPushToken: token }, { new: true });
-
+    const user = await UserModel.findById(userId);
     if (!user) return res.status(404).json({ message: 'Përdoruesi nuk u gjet.' });
+
+    if (user.expoPushToken !== token) {
+      user.expoPushToken = token;
+      await user.save();
+    }
 
     return res.status(200).json({ message: 'Token u ruajt me sukses!' });
   } catch (err) {
@@ -297,6 +324,7 @@ app.post('/api/store-token', async (req, res) => {
     return res.status(500).json({ message: 'Gabim në server.' });
   }
 });
+
 
 // 📥 Register Endpoint
 app.post('/api/register', async (req, res) => {
@@ -360,8 +388,6 @@ app.post('/api/register', async (req, res) => {
     return res.status(500).json({ message: 'Gabim në server gjatë regjistrimit.' });
   }
 });
-
-
 
 // 🔐 Login
 app.post('/api/login', async (req, res) => {
