@@ -17,7 +17,7 @@ const App = () => {
   },
   {
     title: 'Jora Center - Sllatinë',
-    address: t('location.highway'),
+    address: t('location.highway1'),
     image: require('../../assets/images/location1.png'), 
     mapUrl: 'https://maps.app.goo.gl/CFp3ecmjoWXvSZnY7',
   },

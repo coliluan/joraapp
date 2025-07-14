@@ -1,5 +1,4 @@
 // HomeScreen.tsx
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useIsFocused } from '@react-navigation/native';
 import * as Device from 'expo-device';
@@ -8,20 +7,20 @@ import * as Notifications from 'expo-notifications';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    Alert,
-    Button,
-    FlatList,
-    Image,
-    Modal,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  Button,
+  FlatList,
+  Image,
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import PdfThumbnail from '../components/PdfThumbnail';
+// import PdfThumbnail from '../components/PdfThumbnail';
 import { API_BASE } from '../config/api';
 
 // Lejo njoftimet të shfaqen edhe në lockscreen
@@ -263,6 +262,11 @@ const HomeScreen = () => {
     setIsPdfModalVisible(true);
   };
 
+  const capitalizeFirstLetter = (str: string) => {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
   const barcodeUrl = `${API_BASE}/api/barcode/${barcode}`;
 
   return (
@@ -281,7 +285,7 @@ const HomeScreen = () => {
 
             <View style={styles.header}>
               <Text style={styles.greeting}>
-                {t('home.title')} <Text style={styles.name}>{userName}</Text>,
+                {t('home.title')} <Text style={styles.name}>{capitalizeFirstLetter(userName)}</Text>,
               </Text>
               <Text style={styles.phone}>{number}</Text>
             </View>
@@ -303,7 +307,21 @@ const HomeScreen = () => {
                 renderItem={({ item }) => (
                   <TouchableOpacity onPress={() => openPdfModal(item)} style={styles.cardImage}>
                     <View style={styles.pdfContainer}>
-                      <PdfThumbnail pdfId={item._id} />
+                      {/* <PdfThumbnail pdfId={item._id} /> */}
+                      <WebView
+                        key={isFocused ? `fullscreen-${selectedPdf?._id}` : `fullscreen-unfocused`}
+                         source={{
+    uri:
+      Platform.OS === 'android'
+        ? `https://docs.google.com/gview?embedded=true&url=${API_BASE}/api/pdf/${item._id}`
+        : `${API_BASE}/api/pdf/${item._id}`,
+  }}
+                        useWebKit
+                        startInLoadingState
+                        originWhitelist={['*']}
+                        style={{ borderRadius: 5, flex: 1 }}
+                        scrollEnabled={false}
+                      />
                     </View>
                     <Text style={styles.pdfName}>
                       {item.customName || item.name || item.filename || 'Untitled PDF'}
@@ -440,10 +458,10 @@ const HomeScreen = () => {
                 allowsInlineMediaPlayback={true}
                 mediaPlaybackRequiresUserAction={true}
                 allowsProtectedMedia={true}
-                onShouldStartLoadWithRequest={(request) => {
-                  // Parandalo shkarkimin automatik
-                  return true;
-                }}
+                 onShouldStartLoadWithRequest={(request) => {
+    // Parandalo shkarkimin automatik
+    return true;
+  }}
               />
               <TouchableOpacity
                 onPress={() => setIsPdfModalVisible(false)}

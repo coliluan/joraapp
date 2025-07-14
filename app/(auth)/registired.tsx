@@ -2,10 +2,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  ActivityIndicator,
+  // ActivityIndicator,  //ask for usage 
   Alert,
   Image,
   Platform,
@@ -16,15 +16,20 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import PhoneInput from 'react-native-phone-number-input';
 import { ENDPOINTS, getApiUrl } from '../config/api';
+
 
 const RegisterScreen = () => {
   const { t } = useTranslation();
   const { selectedCity } = useLocalSearchParams<{ selectedCity?: string }>();
-
+  const phoneInput = useRef<PhoneInput>(null);
+  const [value, setValue] = useState('');
+  // const [valid, setValid] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
+    email: '',
     password: '',
     confirmPassword: '',
     city: selectedCity || '',
@@ -57,8 +62,8 @@ const RegisterScreen = () => {
   };
 
   const validateInputs = () => {
-    const { firstName, lastName, password, confirmPassword, city, number } = formData;
-    if (!firstName || !lastName || !password || !confirmPassword || !city || !number) {
+    const { firstName, lastName, email, password, confirmPassword, city, number } = formData;
+    if (!firstName || !lastName || !email || !password || !confirmPassword || !city || !number) {
       return 'Të gjitha fushat janë të detyrueshme';
     }
     if (password !== confirmPassword) {
@@ -68,10 +73,7 @@ const RegisterScreen = () => {
     if (password.length < 6) {
       return 'Fjalëkalimi duhet të ketë të paktën 6 karaktere.';
     }
-    // Numri i telefonit: vetëm shifra, min 8 karaktere
-    if (!/^\d{8,}$/.test(number)) {
-      return 'Numri i telefonit duhet të ketë të paktën 8 shifra.';
-    }
+  
     return null;
   };
 
@@ -101,6 +103,7 @@ const RegisterScreen = () => {
         setFormData({
           firstName: '',
           lastName: '',
+          email: '',
           password: '',
           confirmPassword: '',
           city: '',
@@ -108,7 +111,7 @@ const RegisterScreen = () => {
           expoPushToken: '',
         });
         await AsyncStorage.multiRemove(['selectedCity', 'registerFormData']);
-        router.replace('/logIn');
+        router.replace('/(tabs)/home');
       }
     } catch (error) {
       Alert.alert('Gabim', 'Nuk u lidh me serverin');
@@ -139,7 +142,7 @@ const RegisterScreen = () => {
         projectId: '10d2bf05-f514-495b-bad9-5580e3dd0c87',
       });
       return tokenData.data;
-    } catch (error) {
+    } catch {
       return 'error-token-placeholder';
     }
   };
@@ -160,6 +163,39 @@ const RegisterScreen = () => {
           placeholderTextColor="#1F1F1F"
           value={formData.lastName}
           onChangeText={(text) => handleInputChange('lastName', text)}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="E - Mail"
+          placeholderTextColor="#1F1F1F"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={formData.email}
+          onChangeText={(text) => handleInputChange('email', text)}
+        />
+        <PhoneInput
+          ref={phoneInput}
+          defaultValue={value}
+          defaultCode="XK"
+          layout="first"
+          onChangeText={setValue}
+         onChangeFormattedText={(formattedText) => {
+          const checkValid = phoneInput.current?.isValidNumber(formattedText);
+          // setValid(checkValid ?? false);
+          setValue(formattedText); 
+                  
+          if (checkValid) {
+            handleInputChange('number', formattedText); // <-- kjo është e saktë
+          } else {
+            handleInputChange('number', '');
+          }
+        }}
+          containerStyle={styles.phoneContainer}
+          textContainerStyle={styles.phoneTextContainer}
+          textInputStyle={styles.phoneTextInput}
+          flagButtonStyle={styles.flagButtonStyle}
+          codeTextStyle={styles.codeTextStyle}
+          placeholder="Enter your phone number"
         />
         <View style={styles.passwordContainer}>
           <TextInput
@@ -193,6 +229,7 @@ const RegisterScreen = () => {
             />
           </TouchableOpacity>
         </View>
+
         <TouchableOpacity
           style={styles.inputCity}
           onPress={() =>
@@ -201,26 +238,13 @@ const RegisterScreen = () => {
         >
           <Text style={styles.cityInput}>{formData.city || t('edit.selectCity')}</Text>
         </TouchableOpacity>
-        <TextInput
-          style={styles.input}
-          placeholder="Phone Number"
-          placeholderTextColor="#1F1F1F"
-          value={formData.number}
-          onChangeText={(text) => handleInputChange('number', text)}
-          keyboardType="phone-pad"
-        />
+
+        {/* <Text>Valid : {valid ? 'true' : 'false'}</Text> */}
       </View>
+
       <View style={styles.bottomSection}>
-        <TouchableOpacity
-          style={[styles.registerButton, loading && { backgroundColor: '#ccc' }]}
-          onPress={handleRegister}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>{t('register')}</Text>
-          )}
+        <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
+          <Text style={styles.buttonText}>{t('register')}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -233,51 +257,91 @@ const styles = StyleSheet.create({
     paddingVertical: 100,
     backgroundColor: '#FAFAFA',
     justifyContent: 'space-between',
+    flexGrow: 1,
+    gap: 20,
+    height: 850,
   },
   input: {
-    backgroundColor: '#F4F4F4',
-    padding: 12,
-    marginVertical: 8,
-    borderRadius: 6,
+    backgroundColor: '#FFF',
+    height: 60,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    fontSize: 18,
+    color: '#1F1F1F',
+    marginBottom: 10,
+  },
+  inputCity: {
+    height: 60,
+    marginBottom: 10,
+    padding: 19,
+    backgroundColor: '#FFF',
+  },
+  cityInput: {
+    fontSize: 18,
+  },
+  phoneContainer: {
+    backgroundColor: '#FFF',
+    height: 60,
+    borderRadius: 5,
+    marginBottom: 10,
+    width: '100%',
+  },
+  phoneTextContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: 5,
+    paddingVertical: 10,
+    paddingLeft: 10,
+  },
+  phoneTextInput: {
+    fontSize: 18,
+    color: '#1F1F1F',
+  },
+  flagButtonStyle: {
+    width: 40,
+    justifyContent: 'flex-start',
+    paddingLeft: 24,
+  },
+  codeTextStyle: {
+    fontSize: 18,
+    color: '#1F1F1F',
+    marginRight: 10,
   },
   passwordContainer: {
     flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 5,
     alignItems: 'center',
-    backgroundColor: '#F4F4F4',
-    borderRadius: 6,
-    marginVertical: 8,
+    height: 60,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginBottom: 10,
   },
   passwordInput: {
     flex: 1,
-    padding: 12,
+    fontSize: 18,
+    color: '#000',
   },
   eyeIcon: {
-    width: 24,
-    height: 24,
-    marginHorizontal: 8,
-  },
-  inputCity: {
-    backgroundColor: '#F4F4F4',
-    padding: 12,
-    marginVertical: 8,
-    borderRadius: 6,
-  },
-  cityInput: {
-    color: '#1F1F1F',
-  },
-  bottomSection: {
-    marginTop: 30,
+    width: 20,
+    height: 20,
+    tintColor: '#999',
   },
   registerButton: {
     backgroundColor: '#EB2328',
-    padding: 16,
-    borderRadius: 8,
+    height: 60,
+    justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 5,
+    width: 180,
   },
   buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+    color: '#FFF',
+    fontSize: 20,
+    fontWeight: '500',
+  },
+  bottomSection: {
+    alignItems: 'center',
+    marginTop: 30,
   },
 });
 

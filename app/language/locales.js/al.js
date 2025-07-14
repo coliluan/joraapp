@@ -29,7 +29,9 @@ const al = {
   },
   location: {
     store: "Dyqanet e Jora Center",
-    highway:"Autostrada Prishtinë – Pejë, Sllatinë",
+    highway:"Autostrada Prishtinë – Pejë, Komoran",
+    highway1:"Autostrada Prishtinë – Pejë, Sllatinë",
+
     map: "Hape në maps"
   },
   "profile" : {

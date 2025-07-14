@@ -176,8 +176,6 @@ async function sendPushNotification(expoPushToken, title, body) {
     console.error('❌ Error sending push notification:', error);
   }
 }
-
-
 app.post('/api/notify', async (req, res) => {
   const { title, body } = req.body;
 
@@ -281,7 +279,6 @@ app.post('/api/send-broadcast', async (req, res) => {
   }
 });
 
-
 app.post('/api/store-token', async (req, res) => {
   const { userId, token } = req.body;
 
@@ -303,10 +300,20 @@ app.post('/api/store-token', async (req, res) => {
 
 // 📥 Register Endpoint
 app.post('/api/register', async (req, res) => {
-  const { firstName, lastName, password, confirmPassword, city, number, role, expoPushToken } = req.body;
+  const {
+    firstName,
+    lastName,
+    email,
+    password,
+    confirmPassword,
+    city,
+    number,
+    role,
+    expoPushToken,
+  } = req.body;
 
   // Validim bazik
-  if (!firstName || !lastName || !password || !confirmPassword || !city || !number) {
+  if (!firstName || !lastName || !email || !password || !confirmPassword || !city || !number) {
     return res.status(400).json({ message: 'Të gjitha fushat janë të detyrueshme.' });
   }
 
@@ -314,13 +321,18 @@ app.post('/api/register', async (req, res) => {
     return res.status(400).json({ message: 'Fjalëkalimet nuk përputhen.' });
   }
 
-  // Password: min 6 karaktere (testim)
   if (password.length < 6) {
     return res.status(400).json({ message: 'Fjalëkalimi duhet të ketë të paktën 6 karaktere.' });
   }
 
   try {
-    // Kontrollo nëse përdoruesi ekziston sipas numrit të telefonit
+    // Kontrollo nëse ekziston emaili
+    const existingEmail = await UserModel.findOne({ email });
+    if (existingEmail) {
+      return res.status(400).json({ message: 'Ky email është i regjistruar.' });
+    }
+
+    // Kontrollo nëse ekziston numri i telefonit
     const existingUser = await UserModel.findOne({ number });
     if (existingUser) {
       return res.status(400).json({ message: 'Ky numër telefoni është i regjistruar.' });
@@ -332,8 +344,8 @@ app.post('/api/register', async (req, res) => {
     const newUser = new UserModel({
       firstName,
       lastName,
+      email: email.toLowerCase(), // ruaje ashtu siç e shkruan përdoruesi, por gjithmonë lowercase për standard
       password: hashedPassword,
-      email: `${firstName.toLowerCase()}@example.com`, // Email placeholder
       city,
       number,
       barcode,
@@ -348,6 +360,7 @@ app.post('/api/register', async (req, res) => {
     return res.status(500).json({ message: 'Gabim në server gjatë regjistrimit.' });
   }
 });
+
 
 
 // 🔐 Login

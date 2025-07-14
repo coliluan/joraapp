@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Image,
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -152,6 +153,15 @@ const ProfileScreen = () => {
     },
   ] as const;
 
+  const capitalizeFirstLetter = (str: string) => {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+const handleEmailPress = () => {
+  Linking.openURL('mailto:support@jora.center');
+};
+
   return (
     <PaperProvider>
       <View style={styles.container}>
@@ -176,7 +186,7 @@ const ProfileScreen = () => {
               </TouchableOpacity>
 
               <View style={styles.userInfo}>
-                <Text style={styles.name}>{userName}</Text>
+                <Text style={styles.name}>{capitalizeFirstLetter(userName)}</Text>
                 <Text style={styles.phone}>{number}</Text>
               </View>
             </View>
@@ -208,7 +218,7 @@ const ProfileScreen = () => {
 
             <View>
               <Text style={styles.helpText}>{t('profile.help')}</Text>
-              <Text style={styles.support}>support@jora.center</Text>
+              <Text style={styles.support} onPress={handleEmailPress}>support@jora.center</Text>
             </View>
           </View>
         </ScrollView>

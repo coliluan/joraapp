@@ -1,81 +1,124 @@
-// index.tsx
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { Button, PaperProvider } from 'react-native-paper';
-import i18n from './language';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 export default function App() {
   const router = useRouter();
   const { t } = useTranslation();
-  const [isReady, setIsReady] = useState(false);
+  const [showMain, setShowMain] = useState(false);
+  const [checkingLogin, setCheckingLogin] = useState(true);
+  const opacity = useSharedValue(1);
 
+  // Animacioni i onboarding
   useEffect(() => {
-    const initialize = async () => {
-      const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
-      if (!hasSeenOnboarding) {
-        router.replace('/onboarding');
-        return;
-      }
-
-      const userToken = await AsyncStorage.getItem('userToken');
-      if (userToken) {
-        router.replace('/(tabs)/home');
-      } else {
-        if (i18n.isInitialized) {
-          setIsReady(true);
-        } else {
-          i18n.on('initialized', () => {
-            setIsReady(true);
-          });
-        }
-      }
+    const startOnboarding = async () => {
+      setTimeout(() => {
+        opacity.value = withTiming(0, { duration: 800 }, (finished) => {
+          if (finished) {
+            runOnJS(checkLoginStatus)(); // kontrollon login pas animacionit
+          }
+        });
+      }, 2000);
     };
 
-    initialize();
+    startOnboarding();
   }, []);
 
-  if (!isReady) return null;
+  // Kontrollo login-in pasi përfundon onboarding
+  const checkLoginStatus = async () => {
+    try {
+      const user = await AsyncStorage.getItem('loggedInUser');
+      if (user) {
+        router.replace('/(tabs)/home'); // shko direkt në home
+      } else {
+        setShowMain(true); // shfaq butonat login/register
+      }
+    } catch (e) {
+      setShowMain(true); // në rast errori, vazhdo në onboarding screen
+    } finally {
+      setCheckingLogin(false);
+    }
+  };
 
-  return (
-    <PaperProvider>
-      <View style={styles.wrapper}>
-        <View style={styles.container}>
-          <Text style={styles.welcome}>{t('index.title')}</Text>
-          <View style={styles.logoContainer}>
-            <Image
-              source={require('../assets/images/jora-logo.png')}
-              style={{ width: 351, height: 49 }}
-            />
+  const onboardingStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+    };
+  });
+
+  if (checkingLogin) {
+    return (
+      <Animated.View style={[styles.onboardingContainer, onboardingStyle]}>
+        <Image
+          source={require('../assets/images/jora-onboarding.png')}
+          style={styles.onboardingLogo}
+          resizeMode="contain"
+        />
+      </Animated.View>
+    );
+  }
+
+  if (showMain) {
+    return (
+      <PaperProvider>
+        <View style={styles.wrapper}>
+          <View style={styles.container}>
+            <Text style={styles.welcome}>{t('index.title')}</Text>
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('../assets/images/jora-logo.png')}
+                style={{ width: 351, height: 49 }}
+              />
+            </View>
+            <Text style={styles.subtitle}>{t('index.text')}</Text>
           </View>
-          <Text style={styles.subtitle}>{t('index.text')}</Text>
+          <View style={styles.buttonContainer}>
+            <Button
+              mode="contained"
+              onPress={() => router.push('/registired')}
+              style={styles.registeredButton}
+              labelStyle={styles.buttonText}
+            >
+              {t('index.register')}
+            </Button>
+            <Button
+              mode="outlined"
+              onPress={() => router.push('/logIn')}
+              style={styles.logButton}
+              labelStyle={[styles.buttonText, { color: '#D32F2F' }]}
+            >
+              {t('logIn')}
+            </Button>
+          </View>
         </View>
-        <View style={styles.buttonContainer}>
-          <Button
-            mode="contained"
-            onPress={() => router.push('/(auth)/registired')}
-            style={styles.registeredButton}
-            labelStyle={styles.buttonText}
-          >
-            {t('index.register')}
-          </Button>
-          <Button
-            mode="outlined"
-            onPress={() => router.push('/(auth)/logIn')}
-            style={styles.logButton}
-            labelStyle={[styles.buttonText, { color: '#D32F2F' }]}
-          >
-            {t('logIn')}
-          </Button>
-        </View>
-      </View>
-    </PaperProvider>
-  );
+      </PaperProvider>
+    );
+  }
+
+  return null; // fallback për siguri
 }
 
 const styles = StyleSheet.create({
+  onboardingContainer: {
+    flex: 1,
+    backgroundColor: '#FF3D00',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  onboardingLogo: {
+    width: 250,
+    height: 80,
+    transform: [{ scale: 1 }],
+  },
   wrapper: {
     flex: 1,
     paddingBottom: 124,

@@ -30,7 +30,9 @@ const en = {
   },
   location: {
     store: "Jora Center Stores",
-    highway:"Pristina – Peja highway, Sllatine",
+    highway:"Pristina – Peja highway, Komoran",
+    highway1:"Pristina – Peja highway, Sllatinë",
+
     map: "Open in maps"
   },
   "profile" : {

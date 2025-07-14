@@ -3,13 +3,13 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { Button } from 'react-native-paper';
 
@@ -30,7 +30,7 @@ const LogInScreen = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch(__DEV__ ? 'http://192.168.50.239:3000/api/login' : 'https://joracenterapp-3.onrender.com/api/login', {
+      const response = await fetch(__DEV__ ? 'http://192.168.50.173:3000/api/login' : 'https://joracenterapp-3.onrender.com/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
