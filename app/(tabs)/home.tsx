@@ -44,11 +44,15 @@ const HomeScreen = () => {
   const [barcode, setBarcode] = useState('');
   const [pdfList, setPdfList] = useState<any[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isSecondModalVisible, setIsSecondModalVisible] = useState(false);
+  const [notificationTitle, setNotificationTitle] = useState('');
+  const [notificationBody, setNotificationBody] = useState('');
   const [pdfName, setPdfName] = useState('');
   const [pdfSubtitle, setPdfSubtitle] = useState('');
   const [pickedPdfFile, setPickedPdfFile] = useState<any>(null);
   const [selectedPdf, setSelectedPdf] = useState<any>(null);
   const [isPdfModalVisible, setIsPdfModalVisible] = useState(false);
+const [notificationCount, setNotificationCount] = useState(0);
 
   const saveNotificationToStorage = async (title: string, body: string) => {
   try {
@@ -60,8 +64,6 @@ const HomeScreen = () => {
     console.error('Gabim gjatë ruajtjes së njoftimit:', error);
   }
 };
-
-
   const registerForPushNotificationsAsync = async () => {
     try {
       if (!Device.isDevice) {
@@ -113,41 +115,60 @@ const HomeScreen = () => {
     }
   };
 
-  useEffect(() => {
-    const initialize = async () => {
-      try {
-        const userData = await AsyncStorage.getItem('loggedInUser');
-        if (userData) {
-          const parsed = JSON.parse(userData);
-          setUserName(parsed.firstName);
-          setNumber(parsed.number);
-          setBarcode(parsed.barcode);
-          setRole(parsed.role);
 
-          const token = await registerForPushNotificationsAsync();
-          if (token) {
-            await sendPushTokenToBackend(parsed._id, token);
-          }
+
+ useEffect(() => {
+  const initialize = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('loggedInUser');
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        setUserName(parsed.firstName);
+        setNumber(parsed.number);
+        setBarcode(parsed.barcode);
+        setRole(parsed.role);
+
+        const token = await registerForPushNotificationsAsync();
+        if (token) {
+          await sendPushTokenToBackend(parsed._id, token);
         }
-
-        const cached = await AsyncStorage.getItem('cachedPdfs');
-        if (cached) {
-          setPdfList(JSON.parse(cached));
-        }
-
-        const res = await fetch(`${API_BASE}/api/pdfs`);
-        const data = await res.json();
-        setPdfList(data);
-        await AsyncStorage.setItem('cachedPdfs', JSON.stringify(data));
-      } catch (error) {
-        console.error('Initialization error:', error);
       }
-    };
 
-    if (isFocused) {
-      initialize();
+      const cached = await AsyncStorage.getItem('cachedPdfs');
+      if (cached) {
+        setPdfList(JSON.parse(cached));
+      }
+
+      const res = await fetch(`${API_BASE}/api/pdfs`);
+      const data = await res.json();
+      setPdfList(data);
+      await AsyncStorage.setItem('cachedPdfs', JSON.stringify(data));
+
+      // ⬅ Thirr edhe fetchNotificationCount këtu brenda
+      await fetchNotificationCount();
+
+    } catch (error) {
+      console.error('Initialization error:', error);
     }
-  }, [isFocused]);
+  };
+
+  if (isFocused) {
+    initialize(); // Tani është e dukshme këtu
+  }
+}, [isFocused]);
+
+const fetchNotificationCount = async () => {
+  try {
+    const res = await fetch(`${API_BASE}/api/notifications`);
+    const data = await res.json();
+    const lastSeenCount = parseInt(await AsyncStorage.getItem('lastSeenNotificationCount') || '0');
+    const unseenCount = Math.max(data.length - lastSeenCount, 0);
+    setNotificationCount(unseenCount);
+  } catch (error) {
+    console.error('Gabim gjatë marrjes së numrit të njoftimeve:', error);
+  }
+};
+
 
   const pickPDF = async () => {
     try {
@@ -215,6 +236,37 @@ const HomeScreen = () => {
     setIsPdfModalVisible(true);
   };
 
+  const sendNotification = async () => {
+  if (!notificationTitle.trim() || !notificationBody.trim()) {
+    Alert.alert('Gabim', 'Ju lutem plotësoni titullin dhe përmbajtjen.');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/api/notify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: notificationTitle,
+        body: notificationBody,
+      }),
+    });
+
+    const result = await response.json();
+    Alert.alert('Sukses', result.message || 'Njoftimi u dërgua!');
+    await saveNotificationToStorage(notificationTitle, notificationBody);
+
+    // Pas dërgimit: pastro inputet dhe mbyll modalin
+    setNotificationTitle('');
+    setNotificationBody('');
+    setIsSecondModalVisible(false);
+  } catch (error) {
+    console.error('Gabim gjatë dërgimit të njoftimit:', error);
+    Alert.alert('Gabim', 'Nuk u dërgua push notification');
+  }
+};
+
+
   const capitalizeFirstLetter = (str: string) => {
   if (!str) return '';
   return str.charAt(0).toUpperCase() + str.slice(1);
@@ -232,9 +284,13 @@ const HomeScreen = () => {
           <>
             <View style={styles.notification}>
               <TouchableOpacity onPress={() => router.push('/components/notificationModal')}>
-  <Image source={require('../../assets/images/notification.png')} />
-</TouchableOpacity>
-
+              <Image source={require('../../assets/images/notification.png')} />
+            </TouchableOpacity>
+            {notificationCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{notificationCount}</Text>
+              </View>
+            )}
             </View>
             <View style={styles.header}>
               <Text style={styles.greeting}>
@@ -290,47 +346,10 @@ const HomeScreen = () => {
             {role === 'admin' && (
               <>
                 <View style={styles.button}>
-                  <Button title="Ngarko një PDF" onPress={pickPDF} />
+                  <Button color='white' title="Ngarko një PDF" onPress={pickPDF} />
                 </View>
-                
-                <View style={[styles.button, { backgroundColor: 'purple' }]}>
-                  <Button
-                    title="Dërgo te Të Gjithë"
-                    color="white"
-                    onPress={() => {
-                      Alert.prompt(
-                        'Broadcast Notification',
-                        'Shkruani mesazhin për të gjithë përdoruesit:',
-                        [
-                          { text: 'Anulo', style: 'cancel' },
-                          {
-                            text: 'Dërgo',
-                            onPress: async (message) => {
-                              if (message) {
-                                try {
-                                  const response = await fetch(`${API_BASE}/api/notify`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                      title: 'Jora Center',
-                                      body: message
-                                    }),
-                                  });
-                                  const result = await response.json();
-                                  Alert.alert('Sukses', result.message);
-                                  await saveNotificationToStorage('Jora Center', message);
-
-                                } catch (error) {
-                                  Alert.alert('Gabim', 'Nuk u dërgua push notification');
-                                }
-                              }
-                            }
-                          }
-                        ],
-                        'plain-text'
-                      );
-                    }}
-                  />
+                <View style={styles.button}>
+                  <Button color='white' title="Dergo një Njoftim" onPress={() => setIsSecondModalVisible(true)} />
                 </View>
               </>
             )}
@@ -340,6 +359,7 @@ const HomeScreen = () => {
 
       {/* Modal për ngarkim PDF */}
       {role === 'admin' && (
+        <>
         <Modal visible={isModalVisible} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
@@ -348,21 +368,55 @@ const HomeScreen = () => {
                 placeholder="Title"
                 value={pdfName}
                 onChangeText={setPdfName}
-                style={styles.textInput}
+                style={styles.input}
               />
               <TextInput
                 placeholder="Subtitle"
                 value={pdfSubtitle}
                 onChangeText={setPdfSubtitle}
-                style={styles.textInput}
+                style={styles.input}
               />
-              <Button title="Upload PDF" onPress={uploadPDF} />
-              <View style={{ height: 10 }} />
-              <Button title="Cancel" onPress={() => setIsModalVisible(false)} color="red" />
+              <View style={styles.notificationsButton}>
+                <View style={styles.dialogButton}>
+                <Button title="Anulo" onPress={() => setIsModalVisible(false)} />
+              </View>
+              <View style={styles.buttonDialog}>
+              <Button color="white" title="Ngarko" onPress={uploadPDF} />
+              </View>
+              </View>
             </View>
           </View>
         </Modal>
-        
+        <Modal visible={isSecondModalVisible} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Send Push Notification</Text>
+              <TextInput 
+                placeholder="Titulli i njoftimit"
+                placeholderTextColor="black"
+                value={notificationTitle}
+                onChangeText={setNotificationTitle}
+                style={styles.input}
+              />
+              <TextInput
+                placeholder="Përmbajtja e njoftimit"
+                value={notificationBody}
+                onChangeText={setNotificationBody}
+                style={styles.input}
+                placeholderTextColor="black"
+              />
+              <View style={styles.notificationsButton}>
+                <View style={styles.dialogButton}>
+                <Button title="Anulo" onPress={() => setIsSecondModalVisible(false)} />
+              </View>
+              <View style={styles.buttonDialog}>
+              <Button color="white" title="Dërgo" onPress={sendNotification} />
+              </View>
+              </View>
+            </View>
+          </View>
+        </Modal>
+        </>
       )}
 
       {/* Modal për shfaqje PDF në fullscreen */}
@@ -419,11 +473,12 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   button: {
-    backgroundColor: 'red',
+    backgroundColor: '#EB2328',
     width: '100%',
     padding: 10,
     marginTop: 10,
     marginBottom: 20,
+    borderRadius: 5
   },
   header: {
     marginBottom: 27,
@@ -493,20 +548,14 @@ const styles = StyleSheet.create({
   modalContent: {
     marginHorizontal: 20,
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#FAFAFA',
     borderRadius: 12,
   },
   modalTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 12,
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 30,
     textAlign: 'center',
-  },
-  textInput: {
-    backgroundColor: '#F4F4F4',
-    padding: 12,
-    marginVertical: 8,
-    borderRadius: 6,
   },
   pdfThumbnail: {
     flex: 1,
@@ -530,6 +579,56 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     borderRadius: 5,
   },
+  notificationsButton: {
+    marginTop:20,
+    width:'100%',
+    flexDirection: 'row',
+    gap:10,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  dialogButton: {
+    backgroundColor: '#fff',
+    width: '50%',
+    borderRadius: 5,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  buttonDialog: {
+    backgroundColor: '#EB2328',
+    width: '50%',
+    borderRadius: 5,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  input: {
+    backgroundColor: '#FFF',
+    height: 60,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    fontSize: 18,
+    color: '#1F1F1F',
+    marginBottom: 10,
+  },
+  badge: {
+  position: 'absolute',
+  top: -5,
+  right: -5,
+  backgroundColor: '#EB2328',
+  borderRadius: 10,
+  width: 20,
+  height: 20,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+badgeText: {
+  color: '#fff',
+  fontSize: 12,
+  fontWeight: 'bold',
+},
+
 });
 
 export default HomeScreen;

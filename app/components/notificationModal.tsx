@@ -1,7 +1,8 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { Image, Linking, ScrollView, StyleSheet, Text } from 'react-native';
 import { Card, IconButton } from 'react-native-paper';
-import { API_BASE } from '../config/api'; // Make sure this points to your backend
+import { API_BASE } from '../config/api';
 
 interface Notification {
   title: string;
@@ -14,22 +15,22 @@ const NotificationModal = () => {
 
   useEffect(() => {
     const loadNotifications = async () => {
-  try {
-    const response = await fetch(`${API_BASE}/api/notifications`);
-    const data = await response.json();
+      try {
+        const response = await fetch(`${API_BASE}/api/notifications`);
+        const data = await response.json();
 
-    if (Array.isArray(data)) {
-      setNotifications(data); // ✅
-    } else {
-      console.warn('Data nuk është një array:', data);
-      setNotifications([]);
-    }
-  } catch (error) {
-    console.error('Gabim gjatë marrjes së njoftimeve:', error);
-    setNotifications([]); // fallback bosh për të shmangur .map crash
-  }
-};
-
+        if (Array.isArray(data)) {
+          setNotifications(data);
+          await AsyncStorage.setItem('lastSeenNotificationCount', data.length.toString());
+        } else {
+          console.warn('Data nuk është një array:', data);
+          setNotifications([]);
+        }
+      } catch (error) {
+        console.error('Gabim gjatë marrjes së njoftimeve:', error);
+        setNotifications([]);
+      }
+    };
 
     loadNotifications();
   }, []);
@@ -42,14 +43,18 @@ const NotificationModal = () => {
             title={notif.title}
             subtitle={`${notif.body}\n${new Date(notif.sentAt).toLocaleString()}`}
             left={() => (
-        <Image
-          source={require('../../assets/images/notification.png')}
-          style={styles.notificationIcon}
-        />
-      )}
-            right={(props) => <IconButton {...props} 
-            onPress={() => Linking.openURL('https://www.facebook.com/share/18yHT7VRxr/?mibextid=wwXIfr')}
-            icon="dots-vertical" />}
+              <Image
+                source={require('../../assets/images/notification.png')}
+                style={styles.notificationIcon}
+              />
+            )}
+            right={(props) => (
+              <IconButton
+                {...props}
+                onPress={() => Linking.openURL('https://www.facebook.com/JoraCenter/')}
+                icon="dots-vertical"
+              />
+            )}
           />
         </Card>
       ))}
@@ -75,11 +80,11 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   notificationIcon: {
-  width: 40,
-  height: 40,
-  borderRadius: 20,
-  marginRight: 8,
-},
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 8,
+  },
 });
 
 export default NotificationModal;

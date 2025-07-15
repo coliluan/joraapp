@@ -182,36 +182,49 @@ app.post('/api/notify', async (req, res) => {
 
   try {
     const users = await UserModel.find({ expoPushToken: { $exists: true, $ne: null } });
-
     if (users.length === 0) {
       return res.status(404).json({ message: 'Asnjë përdorues nuk ka push token të regjistruar.' });
     }
 
-    const results = [];
-
+    // Ruaj njoftimin në DB
     await NotificationModel.create({ title, body });
 
-    for (const user of users) {
-      console.log(`📤 Sending notification to ${user.firstName} (${user.expoPushToken})`);
-      const result = await sendPushNotification(user.expoPushToken, title, body);
-      console.log(`✅ Result for ${user.firstName}:`, result);
-      results.push(result);
+    const expo = new Expo();
+
+    const uniqueTokens = [...new Set(users.map((u) => u.expoPushToken))];
+    const messages = uniqueTokens
+      .filter(token => Expo.isExpoPushToken(token))
+      .map(token => ({
+        to: token,
+        sound: 'default',
+        title,
+        body,
+      }));
+
+    const chunks = expo.chunkPushNotifications(messages);
+    const tickets = [];
+
+    for (let chunk of chunks) {
+      try {
+        const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+        tickets.push(...ticketChunk);
+      } catch (error) {
+        console.error('❌ Error sending chunk:', error);
+      }
     }
 
-    const uniqueTokens = new Set();
-   const uniqueUsers = users.filter(user => {
-   if (!user.expoPushToken || uniqueTokens.has(user.expoPushToken)) return false;
-   uniqueTokens.add(user.expoPushToken);
-   return true;
-  });
+    console.log('📨 Push tickets:', tickets);
 
-
-    return res.status(200).json({ message: `Notifikimi u dërgua te ${users.length} përdorues.`, results });
+    return res.status(200).json({
+      message: `Notifikimi u dërgua te ${uniqueTokens.length} pajisje.`,
+      tickets,
+    });
   } catch (error) {
     console.error('❌ Error sending notifications:', error);
     return res.status(500).json({ message: 'Gabim gjatë dërgimit të notifikimeve.' });
   }
 });
+
 
 app.get('/api/notifications', async (req, res) => {
   try {
@@ -222,8 +235,6 @@ app.get('/api/notifications', async (req, res) => {
     res.status(500).json({ message: 'Gabim gjatë leximit të njoftimeve.' });
   }
 });
-
-
 
 // Test endpoint për një token specifik
 app.post('/api/test-notification', async (req, res) => {
