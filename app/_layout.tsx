@@ -1,17 +1,26 @@
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-
+import LanguageProvider from '../app/language/LanguageProvider';
 
 export default function RootLayout() {
   const { t } = useTranslation();
 
   return (
-    <Stack initialRouteName="onboarding">
+    <LanguageProvider>
+      <Stack initialRouteName="onboarding">
       <Stack.Screen options={{ headerShown: false }} name="onboarding" />
       <Stack.Screen options={{ 
         headerShown: false,
         gestureEnabled: false,
         }} name="index" />
+        <Stack.Screen
+        name="DashboardScreen"
+        options={{
+          title: 'Dashboard',
+          headerShown: true,
+          headerTitleAlign: 'center',
+        }}
+      />
       <Stack.Screen options={{ 
         headerShown: false,
         gestureEnabled: false,
@@ -82,5 +91,7 @@ export default function RootLayout() {
         name="(auth)/profile/language"
       />
     </Stack>
+    </LanguageProvider>
+    
   );
 }

@@ -79,6 +79,10 @@ app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
   try {
     const { customName, customSubtitle } = req.body;  // read both fields
 
+    if (req.file.mimetype !== 'application/pdf') {
+      return res.status(400).json({ message: 'Lejohen vetëm skedarë PDF.' });
+    }
+
     const pdf = new PdfModel({
       name: req.file.originalname,
       customName: customName || req.file.originalname,
