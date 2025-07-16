@@ -3,7 +3,7 @@ export const API_CONFIG = {
   // URL lokale për zhvillim
   LOCAL: 'http://192.168.50.173:3000',
   // URL e largët për produksion
-  PRODUCTION: 'https://joracenterapp-3.onrender.com',
+  PRODUCTION: 'https://joraapp.onrender.com',
 };
 
 // Përdor URL lokale nëse jemi në development mode, përndryshe përdor production
