@@ -1,7 +1,7 @@
 // API Configuration
 export const API_CONFIG = {
   // URL lokale për zhvillim
-  LOCAL: 'http://192.168.50.173:3000',
+  LOCAL: 'http://192.168.50.201:3000',
   // URL e largët për produksion
   PRODUCTION: 'https://joraapp.onrender.com',
 };

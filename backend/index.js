@@ -229,6 +229,25 @@ app.post('/api/notify', async (req, res) => {
   }
 });
 
+// Express route
+app.post('/api/notifications', async (req, res) => {
+  try {
+    const { title, body } = req.body;
+
+    const newNotification = new Notification({
+      title,
+      body,
+      sentAt: new Date()
+    });
+
+    await newNotification.save();
+    res.status(201).json({ message: 'Notification saved successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to save notification' });
+  }
+});
+
 
 app.get('/api/notifications', async (req, res) => {
   try {
@@ -316,6 +335,17 @@ app.post('/api/send-broadcast', async (req, res) => {
     res.status(500).json({ error: 'Gabim në server' });
   }
 });
+
+app.delete('/api/notifications/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    await Notification.findByIdAndDelete(id);
+    res.status(200).json({ message: 'Deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error deleting notification' });
+  }
+});
+
 
 app.post('/api/store-token', async (req, res) => {
   const { userId, token } = req.body;
