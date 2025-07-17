@@ -57,7 +57,7 @@ const userSchema = new mongoose.Schema({
     default: 'user',
   },
   expoPushToken: String,
-});
+}, { timestamps: true });
 
 const UserModel = mongoose.model('users', userSchema);
 
@@ -662,5 +662,26 @@ app.get('/api/barcode/:code', (req, res) => {
   } catch (err) {
     console.error('❌ Error generating barcode:', err);
     res.status(500).send('Gabim gjatë gjenerimit të barkodit.');
+  }
+});
+
+app.get('/api/user-count-by-date', async (req, res) => {
+  try {
+    const result = await UserModel.aggregate([
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('❌ Error fetching user count by date:', error);
+    res.status(500).json({ message: 'Gabim në server.' });
   }
 });
