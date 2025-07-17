@@ -229,26 +229,6 @@ app.post('/api/notify', async (req, res) => {
   }
 });
 
-// Express route
-app.post('/api/notifications', async (req, res) => {
-  try {
-    const { title, body } = req.body;
-
-    const newNotification = new Notification({
-      title,
-      body,
-      sentAt: new Date()
-    });
-
-    await newNotification.save();
-    res.status(201).json({ message: 'Notification saved successfully' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to save notification' });
-  }
-});
-
-
 app.get('/api/notifications', async (req, res) => {
   try {
     const notifications = await NotificationModel.find().sort({ sentAt: -1 });
@@ -454,7 +434,7 @@ app.post('/api/login', async (req, res) => {
 
     return res.status(200).json({
       message: 'Login i suksesshëm',
-      user: { _id, firstName: name, lastName, city, number, address, postalCode, photo, barcode, role }
+      user: { _id, firstName: name, lastName, city, number,email, address, postalCode, photo, barcode, role }
     });
   } catch (error) {
     console.error('❌ Login error:', error);
@@ -540,6 +520,7 @@ app.get('/api/users/admin', async (req, res) => {
       firstName: 1, 
       lastName: 1, 
       city: 1, 
+      email:1,
       number: 1, 
       role: 1,
       expoPushToken: 1 
@@ -562,6 +543,7 @@ app.get('/api/users', async (req, res) => {
       firstName: 1, 
       lastName: 1, 
       city: 1, 
+      email: 1,
       number: 1, 
       role: 1,
       expoPushToken: 1 
