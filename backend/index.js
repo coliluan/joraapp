@@ -667,11 +667,25 @@ app.get('/api/barcode/:code', (req, res) => {
 
 app.get('/api/user-count-by-date', async (req, res) => {
   try {
+    const { filter } = req.query;
+    let matchStage = {};
+
+    const now = new Date();
+    if (filter === 'last30days') {
+      const thirtyDaysAgo = new Date(now);
+      thirtyDaysAgo.setDate(now.getDate() - 30);
+      matchStage = { createdAt: { $gte: thirtyDaysAgo } };
+    } else if (filter === 'thismonth') {
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      matchStage = { createdAt: { $gte: firstDayOfMonth } };
+    }
+
     const result = await UserModel.aggregate([
+      { $match: matchStage },
       {
         $group: {
           _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
           },
           count: { $sum: 1 }
         }
@@ -679,9 +693,12 @@ app.get('/api/user-count-by-date', async (req, res) => {
       { $sort: { _id: 1 } }
     ]);
 
-    res.status(200).json(result);
+    const total = await UserModel.countDocuments(matchStage);
+
+    res.status(200).json({ data: result, total });
   } catch (error) {
-    console.error('❌ Error fetching user count by date:', error);
+    console.error('❌ Error:', error);
     res.status(500).json({ message: 'Gabim në server.' });
   }
 });
+
