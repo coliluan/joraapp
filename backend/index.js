@@ -313,12 +313,14 @@ app.post('/api/send-broadcast', async (req, res) => {
 app.delete('/api/notifications/:id', async (req, res) => {
   try {
     const id = req.params.id;
-    await Notification.findByIdAndDelete(id);
+    await NotificationModel.findByIdAndDelete(id);
     res.status(200).json({ message: 'Deleted successfully' });
   } catch (err) {
+    console.error('❌ Error deleting notification:', err);
     res.status(500).json({ message: 'Error deleting notification' });
   }
 });
+
 
 
 app.post('/api/store-token', async (req, res) => {
