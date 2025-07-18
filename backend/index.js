@@ -229,6 +229,8 @@ app.post('/api/notify', async (req, res) => {
   }
 });
 
+
+
 app.get('/api/notifications', async (req, res) => {
   try {
     const notifications = await NotificationModel.find().sort({ sentAt: -1 });
