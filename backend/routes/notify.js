@@ -1,55 +1,55 @@
 import { Expo } from 'expo-server-sdk';
 import express from 'express';
-import NotificationModel from '../models/Notification.model.js';
-import UserModel from '../models/User.model.js';
+import Notification from '../../backend/models/Notification.model.js';
 
-const notifyRouter = express.Router();
+const router = express.Router();
+const expo = new Expo();
 
-notifyRouter.post('/', async (req, res) => {
+router.post('/', async (req, res) => {
+  const { title, body } = req.body;
+
+  if (!title || !body) {
+    return res.status(400).json({ message: 'Titulli dhe mesazhi kërkohen.' });
+  }
+
   try {
-    const { title, body } = req.body;
-
-    const users = await UserModel.find({ expoPushToken: { $exists: true } });
-    const expo = new Expo();
-
+    const users = await User.find({ pushToken: { $exists: true, $ne: null } });
     const messages = [];
 
-    const uniqueTokens = new Set();
+    for (let user of users) {
+      if (!Expo.isExpoPushToken(user.pushToken)) continue;
 
-    for (const user of users) {
-      const pushToken = user.expoPushToken;
-      if (Expo.isExpoPushToken(pushToken) && !uniqueTokens.has(pushToken)) {
-        uniqueTokens.add(pushToken);
-        messages.push({
-          to: pushToken,
-          sound: 'default',
-          title,
-          body,
-        });
-      }
+      messages.push({
+        to: user.pushToken,
+        sound: 'default',
+        title,
+        body,
+        data: { withSome: 'data' },
+      });
     }
 
     const chunks = expo.chunkPushNotifications(messages);
-    const tickets = [];
-
-    for (const chunk of chunks) {
-      const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-      tickets.push(...ticketChunk);
+    for (let chunk of chunks) {
+      await expo.sendPushNotificationsAsync(chunk);
     }
 
-    // Ruaj njoftimin në MongoDB
-    const newNotification = await NotificationModel.create({ title, body });
+    const notification = new Notification({ title, body });
+    await notification.save();
 
-    return res.status(200).json({
-      message: `Notifikimi u dërgua te ${uniqueTokens.size} pajisje.`,
-      tickets,
-      notification: newNotification,
-    });
-
+    return res.status(200).json({ message: 'Njoftimi u dërgua dhe u ruajt.', notification });
   } catch (error) {
-    console.error('❌ Gabim gjatë dërgimit të njoftimit:', error);
+    console.error('Gabim në dërgimin e njoftimit:', error);
     return res.status(500).json({ message: 'Gabim i brendshëm i serverit' });
   }
 });
 
-export default notifyRouter;
+router.get('/', async (req, res) => {
+  try {
+    const notifications = await Notification.find().sort({ sentAt: -1 });
+    res.status(200).json(notifications);
+  } catch (err) {
+    res.status(500).json({ message: 'Gabim në marrjen e njoftimeve.' });
+  }
+});
+
+export default router; // ✅ Eksporto si ES module
