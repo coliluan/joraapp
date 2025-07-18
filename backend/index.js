@@ -10,6 +10,7 @@ import mongoose from 'mongoose';
 import multer from 'multer';
 import NotificationModel from '../backend/models/Notification.model.js';
 
+
 import { Expo } from 'expo-server-sdk';
 import fetch from 'node-fetch';
 
@@ -75,6 +76,8 @@ const pdfSchema = new mongoose.Schema({
 
 const PdfModel = mongoose.model('pdfs', pdfSchema);
 
+
+
 app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
   try {
     const { customName, customSubtitle } = req.body;  // read both fields
@@ -83,17 +86,6 @@ app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
       return res.status(400).json({ message: 'Lejohen vetëm skedarë PDF.' });
     }
 
-    const pdf = new PdfModel({
-      name: req.file.originalname,
-      customName: customName || req.file.originalname,
-      customSubtitle: customSubtitle || '',   // save subtitle here
-      data: req.file.buffer,
-      contentType: req.file.mimetype,
-    });
-
-    await pdf.save();
-
-    res.status(200).json({ message: 'PDF u ruajt me sukses.', pdfId: pdf._id });
   } catch (error) {
     console.error('❌ Error uploading PDF:', error);
     res.status(500).json({ message: 'Gabim gjatë ruajtjes së PDF.' });
@@ -431,7 +423,7 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ message: 'Fjalëkalimi është i pasaktë' });
     }
 
-    const { _id, firstName: name, lastName, city, number, address, postalCode, photo, barcode, role } = user;
+    const { _id, firstName: name, lastName, city, email, number, address, postalCode, photo, barcode, role } = user;
     console.log('👉 Roli nga databaza:', role);
 
     return res.status(200).json({
