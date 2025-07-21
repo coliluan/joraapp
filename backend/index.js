@@ -122,6 +122,18 @@ app.get('/api/pdfs', async (req, res) => {
   }
 });
 
+app.delete('/api/pdf/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await PdfModel.findByIdAndDelete(id);
+    res.status(200).json({ message: 'PDF u fshi me sukses' });
+  } catch (error) {
+    console.error('❌ Gabim gjatë fshirjes së PDF:', error);
+    res.status(500).json({ message: 'Gabim në server' });
+  }
+});
+
+
 app.post('/api/user/push-token', async (req, res) => {
   const { firstName, expoPushToken } = req.body;
 
