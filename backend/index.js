@@ -87,13 +87,7 @@ app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
     if (req.file.mimetype !== 'application/pdf')
       return res.status(400).json({ message: 'Lejohen vetëm PDF.' });
 
-    const pdf = new PdfModel({
-      name: req.file.originalname,
-      customName,
-      customSubtitle,
-      data: req.file.buffer,
-      contentType: req.file.mimetype,
-    });
+    
     await pdf.save();
 
     return res.status(200).json({ message: 'Uploaded successfully', pdfId: pdf._id });
