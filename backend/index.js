@@ -31,11 +31,21 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // Middleware
-app.use(helmet());
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json()); 
 app.use(morgan('dev'));
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        // 👇 Lejo frontend-in të embed një PDF nga ky backend
+        "frame-ancestors": ["'self'", "http://192.168.50.173:3000"],
+      },
+    },
+  })
+);
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URL)
