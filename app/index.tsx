@@ -1,3 +1,4 @@
+import { globalStyles } from '@/assets/globalStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -85,7 +86,7 @@ export default function App() {
             <Button
               mode="contained"
               onPress={() => router.push('/registired')}
-              style={styles.registeredButton}
+              style={globalStyles.registerButton}
               labelStyle={styles.buttonText}
             >
               {t('index.register')}
@@ -155,14 +156,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 20,
     backgroundColor: '#FAFAFA',
-  },
-  registeredButton: {
-    backgroundColor: '#D32F2F',
-    width: 180,
-    height: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 0,
   },
   logButton: {
     borderColor: '#D32F2F',

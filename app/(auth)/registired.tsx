@@ -1,3 +1,4 @@
+import { globalStyles } from '@/assets/globalStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
@@ -149,23 +150,23 @@ const RegisterScreen = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <View>
+      <View style={globalStyles.globalContainer}>
         <TextInput
-          style={styles.input}
+          style={globalStyles.input}
           placeholder={t('name')}
           placeholderTextColor="#1F1F1F"
           value={formData.firstName}
           onChangeText={(text) => handleInputChange('firstName', text)}
         />
         <TextInput
-          style={styles.input}
+          style={globalStyles.input}
           placeholder={t('surname')}
           placeholderTextColor="#1F1F1F"
           value={formData.lastName}
           onChangeText={(text) => handleInputChange('lastName', text)}
         />
         <TextInput
-          style={styles.input}
+          style={globalStyles.input}
           placeholder="E - Mail"
           placeholderTextColor="#1F1F1F"
           keyboardType="email-address"
@@ -197,7 +198,7 @@ const RegisterScreen = () => {
           codeTextStyle={styles.codeTextStyle}
           placeholder="Enter your phone number"
         />
-        <View style={styles.passwordContainer}>
+        <View style={globalStyles.passwordContainer}>
           <TextInput
             style={styles.passwordInput}
             placeholder={t('placeHolder')}
@@ -213,7 +214,7 @@ const RegisterScreen = () => {
             />
           </TouchableOpacity>
         </View>
-        <View style={styles.passwordContainer}>
+        <View style={globalStyles.passwordContainer}>
           <TextInput
             style={styles.passwordInput}
             placeholder={t('password.confirm')}
@@ -231,7 +232,7 @@ const RegisterScreen = () => {
         </View>
 
         <TouchableOpacity
-          style={styles.inputCity}
+          style={globalStyles.input}
           onPress={() =>
             router.push({ pathname: '/(auth)/profile/cities', params: { from: 'register' } })
           }
@@ -243,7 +244,7 @@ const RegisterScreen = () => {
       </View>
 
       <View style={styles.bottomSection}>
-        <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
+        <TouchableOpacity style={globalStyles.registerButton} onPress={handleRegister}>
           <Text style={styles.buttonText}>{t('register')}</Text>
         </TouchableOpacity>
       </View>
@@ -261,21 +262,6 @@ const styles = StyleSheet.create({
     gap: 20,
     height: 850,
   },
-  input: {
-    backgroundColor: '#FFF',
-    height: 60,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    fontSize: 18,
-    color: '#1F1F1F',
-    marginBottom: 10,
-  },
-  inputCity: {
-    height: 60,
-    marginBottom: 10,
-    padding: 19,
-    backgroundColor: '#FFF',
-  },
   cityInput: {
     fontSize: 18,
   },
@@ -283,7 +269,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     height: 60,
     borderRadius: 5,
-    marginBottom: 10,
     width: '100%',
   },
   phoneTextContainer: {
@@ -306,16 +291,6 @@ const styles = StyleSheet.create({
     color: '#1F1F1F',
     marginRight: 10,
   },
-  passwordContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 5,
-    alignItems: 'center',
-    height: 60,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginBottom: 10,
-  },
   passwordInput: {
     flex: 1,
     fontSize: 18,
@@ -325,14 +300,6 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     tintColor: '#999',
-  },
-  registerButton: {
-    backgroundColor: '#EB2328',
-    height: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 5,
-    width: 180,
   },
   buttonText: {
     color: '#FFF',

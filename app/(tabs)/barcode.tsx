@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
+import { ENDPOINTS, getApiUrl } from '../config/api';
 
 const styles = StyleSheet.create({
   container: {
@@ -26,14 +27,14 @@ const Barcode = () => {
       const jsonValue = await AsyncStorage.getItem('loggedInUser');
       if (jsonValue) {
         const user = JSON.parse(jsonValue);
-        setBarcode(user.barcode); // Set barcode to the state
+        setBarcode(user.barcode); 
       }
     };
 
     fetchUser();
   }, []);
 
-  const barcodeUrl = `https://joracenterapp-3.onrender.com/api/barcode/${barcode}`;
+  const barcodeUrl = barcode ? getApiUrl(ENDPOINTS.BARCODE(barcode)) : '';
 
 
   return (

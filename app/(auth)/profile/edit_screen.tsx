@@ -1,3 +1,5 @@
+import { ENDPOINTS, getApiUrl } from '@/app/config/api';
+import { globalStyles } from '@/assets/globalStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -21,16 +23,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(250, 250, 250, 1)',
     gap: 24.5,
   },
-  input: {
-    backgroundColor: 'rgba(255, 255, 255, 1)',
-    height: 60,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    fontSize: 18,
-    color: '#1F1F1F',
-    marginBottom: 10,
-    justifyContent: 'center',
-  },
   cityText: {
     fontSize: 16,
     color: '#1F1F1F',
@@ -38,27 +30,7 @@ const styles = StyleSheet.create({
   title: {
     textAlign: 'center',
   },
-  modal: {
-    backgroundColor: '#FAFAFA'
-  },
-  dialogTitle: {
-    textAlign: 'center',
-    fontWeight: 'bold',
-    color: '#EB2328'
-  },
-  dialogText: {
-    textAlign: 'center',
-    fontSize:22,
-  },
-  dialogButton : {
-    backgroundColor:'#fff',
-    width:'50%'
-  },
-  buttonDialog :{
-    backgroundColor:'#EB2328',
-    width:'50%',
-    color: '#fff'
-  },
+
 });
 
 const handleDeleteUser = async () => {
@@ -72,12 +44,9 @@ const handleDeleteUser = async () => {
     const parsed = JSON.parse(userData);
     const userId = parsed._id;
 
-    const response = await fetch(
-      `https://joracenterapp-3.onrender.com/api/user/${userId}`,
-      {
-        method: 'DELETE',
-      }
-    );
+    const response = await fetch(getApiUrl(`/api/user/${userId}`), { method: 'DELETE',
+});
+
 
     const result = await response.json();
 
@@ -116,16 +85,8 @@ const EditScreen = () => {
       const parsed = JSON.parse(localUser);
       const userFirstName = parsed.firstName;
       setFirstName(userFirstName);
-
-      const response = await fetch(
-        // `http://localhost:3000/api/user/${userFirstName}`
-        `https://joracenterapp-3.onrender.com/api/user/${userFirstName}`
-
-
-        
-      );
+      const response = await fetch(getApiUrl(ENDPOINTS.USER(userFirstName)));
       const data = await response.json();
-
       if (response.ok) {
         const user = data.user;
         setAddress(user.address || '');
@@ -149,14 +110,14 @@ const EditScreen = () => {
       if (!firstName) return;
 
       const res = await fetch(
-        // 'http://localhost:3000/api/user/address',
-        `https://joracenterapp-3.onrender.com/api/user/address`,
-
+        getApiUrl(ENDPOINTS.USER_ADDRESS),
         {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firstName, ...updatedFields }),
-      });
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ firstName, ...updatedFields }),
+        }
+      );
+
 
       const data = await res.json();
 
@@ -191,9 +152,9 @@ const EditScreen = () => {
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
       >
-        <View>
+        <View style={globalStyles.globalContainer}>
         <TouchableOpacity
-            style={styles.input}
+            style={globalStyles.input}
             onPress={() =>
               router.push({ pathname: '/(auth)/profile/cities', params: { from: 'edit' } })
             }
@@ -204,7 +165,7 @@ const EditScreen = () => {
           </TouchableOpacity>
 
           <TextInput
-            style={styles.input}
+            style={globalStyles.input}
             placeholder={t('edit.post')}
             placeholderTextColor="#1F1F1F"
             value={postalCode}
@@ -213,7 +174,7 @@ const EditScreen = () => {
           />
 
           <TextInput
-            style={styles.input}
+            style={globalStyles.input}
             placeholder={t('edit.address')}
             placeholderTextColor="#1F1F1F"
             value={address}
@@ -223,7 +184,7 @@ const EditScreen = () => {
 
           {/* Button that opens the modal */}
           <TouchableOpacity
-            style={styles.input}
+            style={globalStyles.input}
             onPress={() => setModalVisible(true)}
           >
             <Text style={{ color: 'red', fontSize: 16 }}>{t('delete')}</Text>
@@ -232,15 +193,15 @@ const EditScreen = () => {
       </ScrollView>
 
       <Portal>
-        <Dialog  style={styles.modal} visible={modalVisible} onDismiss={() => setModalVisible(false)}>
+        <Dialog  style={globalStyles.modal} visible={modalVisible} onDismiss={() => setModalVisible(false)}>
           <Dialog.Icon icon="alert" />
-          <Dialog.Title style={styles.dialogTitle}>{t('modalDelete')}</Dialog.Title>
+          <Dialog.Title style={globalStyles.dialogTitle}>{t('modalDelete')}</Dialog.Title>
           <Dialog.Content>
-            <Text style={styles.dialogText}>{t('titleModal')}</Text>
+            <Text style={globalStyles.dialogText}>{t('titleModal')}</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setModalVisible(false)} style={styles.dialogButton}>{t('no')}</Button>
-            <Button style={styles.buttonDialog}
+            <Button onPress={() => setModalVisible(false)} style={globalStyles.dialogButton}>{t('no')}</Button>
+            <Button style={globalStyles.buttonDialog}
               textColor="#fff"
               onPress={() => {
                 setModalVisible(false);

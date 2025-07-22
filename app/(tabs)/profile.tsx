@@ -1,3 +1,4 @@
+import { globalStyles } from '@/assets/globalStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -19,6 +20,7 @@ import {
   Provider as PaperProvider,
   Portal,
 } from 'react-native-paper';
+import { ENDPOINTS, getApiUrl } from '../config/api';
 
 const ProfileScreen = () => {
   const { t } = useTranslation();
@@ -40,11 +42,7 @@ const ProfileScreen = () => {
           setUserName(parsed.firstName);
           if (parsed.photo) setProfileImage(parsed.photo);
 
-          const response = await fetch(
-            `https://joracenterapp-3.onrender.com/api/user/${parsed.firstName}`
-            // `http://localhost:3000/api/user/${parsed.firstName}`
-
-          );
+          const response = await fetch(getApiUrl(ENDPOINTS.USER(parsed.firstName)));
           const result = await response.json();
 
           if (response.ok && result.user) {
@@ -84,21 +82,13 @@ const ProfileScreen = () => {
 
         if (userName) {
           const res = await fetch(
-            'https://joracenterapp-3.onrender.com/api/user/photo',
-            // 'http://localhost:3000/api/user/photo',
-
+            getApiUrl(ENDPOINTS.USER_PHOTO),
             {
               method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                firstName: userName,
-                photo: base64Img,
-              }),
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ firstName: userName, photo: base64Img }),
             }
           );
-
           const data = await res.json();
           if (res.ok) {
             console.log('✅ Foto u ruajt!');
@@ -167,7 +157,7 @@ const handleEmailPress = () => {
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.innerContent}>
-            <View style={styles.notification}>
+            <View style={globalStyles.notification}>
               <TouchableOpacity onPress={() => router.push('/components/notificationModal')}>
                 <Image source={require('../../assets/images/notification.png')} />
               </TouchableOpacity>
@@ -187,7 +177,7 @@ const handleEmailPress = () => {
 
               <View style={styles.userInfo}>
                 <Text style={styles.name}>{capitalizeFirstLetter(userName)}</Text>
-                <Text style={styles.phone}>{number}</Text>
+                <Text style={globalStyles.phone}>{number}</Text>
               </View>
             </View>
 
@@ -215,7 +205,6 @@ const handleEmailPress = () => {
                 <Text style={styles.optionText}>{t('logout')}</Text>
               </TouchableOpacity>
             </View>
-
             <View>
               <Text style={styles.helpText}>{t('profile.help')}</Text>
               <Text style={styles.support} onPress={handleEmailPress}>support@jora.center</Text>
@@ -224,16 +213,16 @@ const handleEmailPress = () => {
         </ScrollView>
 
         <Portal>
-          <Dialog style={styles.modal} visible={visible} onDismiss={hideDialog}>
+          <Dialog style={globalStyles.modal} visible={visible} onDismiss={hideDialog}>
             <Dialog.Icon icon="alert" />
-            <Dialog.Title style={styles.dialogTitle}>{t('modalRemove')}</Dialog.Title>
+            <Dialog.Title style={globalStyles.dialogTitle}>{t('modalRemove')}</Dialog.Title>
             <Dialog.Content>
-              <Text style={styles.dialogText}>{t('titleRemoveModal')}</Text>
+              <Text style={globalStyles.dialogText}>{t('titleRemoveModal')}</Text>
             </Dialog.Content>
             <Dialog.Actions>
-              <Button style={styles.dialogButton} onPress={hideDialog}>{t('no')}</Button>
+              <Button style={globalStyles.dialogButton} onPress={hideDialog}>{t('no')}</Button>
               <Button
-                style={styles.buttonDialog}
+                style={globalStyles.buttonDialog}
                 onPress={() => {
                   hideDialog();
                   handleLogOutUser();
@@ -262,10 +251,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     gap: 24.5,
   },
-  notification: {
-    alignItems: 'flex-end',
-    marginBottom: 44.5,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -283,11 +268,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '500',
     color: '#000',
-  },
-  phone: {
-    fontSize: 12,
-    color: 'rgba(23, 23, 23, 1)',
-    fontWeight: '400',
   },
   profileSection: {
     gap: 15,
@@ -330,27 +310,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'right',
     marginBottom: 30,
-  },
-  modal: {
-    backgroundColor: '#FAFAFA',
-  },
-  dialogTitle: {
-    textAlign: 'center',
-    fontWeight: 'bold',
-    color: '#EB2328',
-  },
-  dialogText: {
-    textAlign: 'center',
-    fontSize: 22,
-  },
-  dialogButton: {
-    backgroundColor: '#fff',
-    width: '50%',
-  },
-  buttonDialog: {
-    backgroundColor: '#EB2328',
-    width: '50%',
-    color: '#fff',
   },
 });
 

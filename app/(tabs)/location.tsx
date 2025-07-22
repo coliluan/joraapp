@@ -1,9 +1,8 @@
+import { globalStyles } from '@/assets/globalStyles';
 import { router } from 'expo-router';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-
 
 const App = () => {
 
@@ -26,7 +25,7 @@ const App = () => {
   
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.notification}>
+      <View style={globalStyles.notification}>
         <TouchableOpacity onPress={() => router.push('/components/notificationModal')}>
           <Image source={require('../../assets/images/notification.png')} />
         </TouchableOpacity>
@@ -37,7 +36,7 @@ const App = () => {
         <View key={index} style={styles.card}>
           <Image source={location.image} style={styles.image} resizeMode="cover" />
           <View style={styles.cardContent}>
-            <Text style={styles.title}>{location.title}</Text>
+            <Text style={globalStyles.title}>{location.title}</Text>
             <Text style={styles.address}>{location.address}</Text>
             <TouchableOpacity
               style={styles.button}
@@ -53,14 +52,9 @@ const App = () => {
 };
 
 const styles = StyleSheet.create({
-  notification: {
-    alignItems: 'flex-end',
-    marginBottom:15,
-    },
   container: {
     paddingHorizontal: 15,
     paddingVertical: 45,
-
     backgroundColor: '#FAFAFA',
   },
   header: {
@@ -85,12 +79,6 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     gap: 5
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#171717',
-    fontFamily: 'Poppins-Regular'
   },
   address: {
     color: '#rgba(23, 23, 23, 1)',

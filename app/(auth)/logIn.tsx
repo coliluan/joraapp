@@ -1,3 +1,4 @@
+import { globalStyles } from '@/assets/globalStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -12,6 +13,7 @@ import {
   View
 } from 'react-native';
 import { Button } from 'react-native-paper';
+import { ENDPOINTS, getApiUrl } from '../config/api';
 
 
 const LogInScreen = () => {
@@ -30,7 +32,8 @@ const LogInScreen = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch(__DEV__ ? 'http://192.168.50.173:3000/api/login' : 'https://joraapp.onrender.com/api/login', {
+      const response = await fetch(getApiUrl(ENDPOINTS.LOGIN), {
+
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -56,13 +59,13 @@ const LogInScreen = () => {
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.custom}>
         <TextInput
-          style={styles.input}
+          style={globalStyles.input}
           placeholder={t('name')}
           placeholderTextColor="#1F1F1F"
           value={formData.firstName}
           onChangeText={(text) => handleInputChange('firstName', text)}
         />
-        <View style={styles.passwordContainer}>
+        <View style={globalStyles.passwordContainer}>
           <TextInput
             style={styles.passwordInput}
             placeholder={t('placeHolder')}
@@ -84,7 +87,7 @@ const LogInScreen = () => {
         <Button
           mode="contained"
           onPress={handleLogin}
-          style={styles.registerButton}
+          style={globalStyles.registerButton}
           labelStyle={styles.buttonText}
         >
           {t('logIn')}
@@ -106,23 +109,6 @@ const styles = StyleSheet.create({
   custom: {
     gap: 20,
   },
-  input: {
-    backgroundColor: '#FFFFFF',
-    height: 60,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    fontSize: 18,
-    color: '#1F1F1F',
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 5,
-    alignItems: 'center',
-    height: 60,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
   passwordInput: {
     flex: 1,
     fontSize: 18,
@@ -132,13 +118,6 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     tintColor: '#999',
-  },
-  registerButton: {
-    backgroundColor: '#EB2328',
-    height: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 180,
   },
   buttonText: {
     color: '#FFF',

@@ -1,3 +1,5 @@
+import { ENDPOINTS, getApiUrl } from '@/app/config/api';
+import { globalStyles } from '@/assets/globalStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,15 +22,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     backgroundColor: 'rgba(250, 250, 250, 1)',
     gap: 20,
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 5,
-    alignItems: 'center',
-    height: 60,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -87,15 +80,13 @@ const PassWordScreen = () => {
     }
 
     try {
-      const response = await fetch(
-        // 'http://localhost:3000/api/user/password'
-        'https://joracenterapp-3.onrender.com/api/user/password'
-        
-        , {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firstName: userName, oldPassword, newPassword }),
-      });
+      const response = await fetch(getApiUrl(ENDPOINTS.USER_PASSWORD),
+  {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ firstName: userName, oldPassword, newPassword }),
+  }
+);
 
       const result = await response.json();
       if (!response.ok) {
@@ -117,7 +108,7 @@ const PassWordScreen = () => {
     <PaperProvider>
       <View style={styles.container}>
         <ScrollView contentContainerStyle={{ gap: 20 }} keyboardShouldPersistTaps="handled">
-          <View style={styles.passwordContainer}>
+          <View style={globalStyles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
               placeholder={t('placeHolder')}
@@ -134,7 +125,7 @@ const PassWordScreen = () => {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.passwordContainer}>
+          <View style={globalStyles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
               placeholder={t('password.old')}
@@ -151,7 +142,7 @@ const PassWordScreen = () => {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.passwordContainer}>
+          <View style={globalStyles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
               placeholder={t('password.confirm')}
