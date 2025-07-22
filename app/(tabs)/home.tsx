@@ -20,6 +20,12 @@ import {
 import { WebView } from 'react-native-webview';
 import { API_BASE } from '../config/api';
 
+type Pdf = {
+  _id: string;
+  uploadedAt: string;
+  [key: string]: any; // nëse ka fusha të tjera që nuk i definon tani
+};
+
 // Lejo njoftimet të shfaqen edhe në lockscreen
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -118,8 +124,12 @@ const [notificationCount, setNotificationCount] = useState(0);
       }
 
       const res = await fetch(`${API_BASE}/api/pdfs`);
-      const data = await res.json();
-      setPdfList(data);
+      const data: Pdf[] = await res.json();
+      const sorted = data.sort(
+        (a: Pdf, b: Pdf) =>
+          new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+      );
+setPdfList(sorted);
       await AsyncStorage.setItem('cachedPdfs', JSON.stringify(data));
 
       // ⬅ Thirr edhe fetchNotificationCount këtu brenda
@@ -139,16 +149,18 @@ useEffect(() => {
   let pollingInterval: number; // Use number instead of NodeJS.Timeout
 
   const fetchPdfs = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/pdfs`);
-      const data = await res.json();
-      setPdfList(data);
-      await AsyncStorage.setItem('cachedPdfs', JSON.stringify(data));
-    } catch (error) {
-      console.error('Gabim gjatë marrjes së PDF-ve:', error);
-    }
-  };
-
+  try {
+    const res = await fetch(`${API_BASE}/api/pdfs`);
+    const data: Pdf[] = await res.json();
+    const sorted = data.sort(
+      (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+    );
+    setPdfList(sorted);
+    await AsyncStorage.setItem('cachedPdfs', JSON.stringify(sorted));
+  } catch (error) {
+    console.error('Gabim gjatë marrjes së PDF-ve:', error);
+  }
+};
   if (isFocused) {
     fetchPdfs(); // Fetch initially
     pollingInterval = setInterval(fetchPdfs, 15000); // Poll every 15 seconds
