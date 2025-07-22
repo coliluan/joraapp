@@ -238,30 +238,19 @@ const fetchNotificationCount = async () => {
                 contentContainerStyle={styles.card}
                 renderItem={({ item }) => (
                   <TouchableOpacity onPress={() => openPdfModal(item)} style={styles.cardImage}>
-                    <View style={styles.pdfContainer}>
-                      {/* <PdfThumbnail pdfId={item._id} /> */}
-                      <WebView
-                        key={isFocused ? `fullscreen-${selectedPdf?._id}` : `fullscreen-unfocused`}
-                         source={{
-    uri:
-      Platform.OS === 'android'
-        ? `https://docs.google.com/gview?embedded=true&url=${API_BASE}/api/pdf/${item._id}`
-        : `${API_BASE}/api/pdf/${item._id}`,
-  }}
-                        useWebKit
-                        startInLoadingState
-                        originWhitelist={['*']}
-                        style={{ borderRadius: 5, flex: 1 }}
-                        scrollEnabled={false}
-                      />
-                    </View>
-                    <Text style={styles.pdfName}>
-                      {item.customName || item.name || item.filename || 'Untitled PDF'}
-                    </Text>
-                    {item.customSubtitle && (
-                      <Text style={styles.pdfSubtitle}>{item.customSubtitle}</Text>
-                    )}
-                  </TouchableOpacity>
+                <View style={styles.pdfContainer}>
+                  <Image
+                    source={require('../../assets/images/fletushka.png')}  style={{ width: '100%', height: 217, borderRadius: 5 }}
+                    />
+                                    </View>
+                      <Text style={styles.pdfName}>
+                        {item.customName || item.name || item.filename || 'Untitled PDF'}
+                      </Text>
+                      {item.customSubtitle && (
+                        <Text style={styles.pdfSubtitle}>{item.customSubtitle}</Text>
+                      )}
+                    </TouchableOpacity>
+
                 )}
               />
             )}
@@ -374,6 +363,11 @@ const styles = StyleSheet.create({
   pdfContainer: {
     paddingHorizontal: 17.5,
     height: 217,
+    width: '100%',
+  },
+  pdfImage: {
+    flex: 1,
+  borderRadius: 5,
   },
   pdfName: {
     fontSize: 15,
