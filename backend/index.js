@@ -1,3 +1,4 @@
+import helmet from 'helmet';
 
 import bcrypt from 'bcrypt';
 import bodyParser from 'body-parser';
@@ -7,6 +8,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import JsBarcode from 'jsbarcode';
 import mongoose from 'mongoose';
+import morgan from 'morgan';
 import multer from 'multer';
 import NotificationModel from '../backend/models/Notification.model.js';
 
@@ -29,9 +31,11 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // Middleware
+app.use(helmet());
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json()); 
+app.use(morgan('dev'));
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URL)
