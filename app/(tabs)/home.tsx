@@ -2,21 +2,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useIsFocused } from '@react-navigation/native';
 import * as Device from 'expo-device';
-import * as DocumentPicker from 'expo-document-picker';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
-  Button,
   FlatList,
   Image,
   Modal,
   Platform,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
@@ -40,30 +37,12 @@ const HomeScreen = () => {
 
   const [userName, setUserName] = useState('');
   const [number, setNumber] = useState('');
-  const [role, setRole] = useState<string>('');
   const [barcode, setBarcode] = useState('');
   const [pdfList, setPdfList] = useState<any[]>([]);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isSecondModalVisible, setIsSecondModalVisible] = useState(false);
-  const [notificationTitle, setNotificationTitle] = useState('');
-  const [notificationBody, setNotificationBody] = useState('');
-  const [pdfName, setPdfName] = useState('');
-  const [pdfSubtitle, setPdfSubtitle] = useState('');
-  const [pickedPdfFile, setPickedPdfFile] = useState<any>(null);
   const [selectedPdf, setSelectedPdf] = useState<any>(null);
   const [isPdfModalVisible, setIsPdfModalVisible] = useState(false);
 const [notificationCount, setNotificationCount] = useState(0);
 
-  const saveNotificationToStorage = async (title: string, body: string) => {
-  try {
-    const existing = await AsyncStorage.getItem('storedNotifications');
-    const parsed = existing ? JSON.parse(existing) : [];
-    const updated = [{ title, body, date: new Date().toISOString() }, ...parsed];
-    await AsyncStorage.setItem('storedNotifications', JSON.stringify(updated));
-  } catch (error) {
-    console.error('Gabim gjatë ruajtjes së njoftimit:', error);
-  }
-};
   const registerForPushNotificationsAsync = async () => {
     try {
       if (!Device.isDevice) {
@@ -126,7 +105,6 @@ const [notificationCount, setNotificationCount] = useState(0);
         setUserName(parsed.firstName);
         setNumber(parsed.number);
         setBarcode(parsed.barcode);
-        setRole(parsed.role);
 
         const token = await registerForPushNotificationsAsync();
         if (token) {
@@ -157,6 +135,31 @@ const [notificationCount, setNotificationCount] = useState(0);
   }
 }, [isFocused]);
 
+useEffect(() => {
+  let pollingInterval: number; // Use number instead of NodeJS.Timeout
+
+  const fetchPdfs = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/pdfs`);
+      const data = await res.json();
+      setPdfList(data);
+      await AsyncStorage.setItem('cachedPdfs', JSON.stringify(data));
+    } catch (error) {
+      console.error('Gabim gjatë marrjes së PDF-ve:', error);
+    }
+  };
+
+  if (isFocused) {
+    fetchPdfs(); // Fetch initially
+    pollingInterval = setInterval(fetchPdfs, 15000); // Poll every 15 seconds
+  }
+
+  return () => {
+    if (pollingInterval) clearInterval(pollingInterval);
+  };
+}, [isFocused]);
+
+
 const fetchNotificationCount = async () => {
   try {
     const res = await fetch(`${API_BASE}/api/notifications`);
@@ -170,102 +173,10 @@ const fetchNotificationCount = async () => {
 };
 
 
-  const pickPDF = async () => {
-    try {
-      const res = await DocumentPicker.getDocumentAsync({ type: 'application/pdf' });
-      if (!res.canceled) {
-        const file = res.assets?.[0];
-        setPickedPdfFile(file);
-        setPdfName('');
-        setPdfSubtitle('');
-        setIsModalVisible(true);
-      }
-    } catch (err) {
-      console.error('Error picking PDF:', err);
-    }
-  };
-
-  const uploadPDF = async () => {
-    if (!pickedPdfFile || !pdfName.trim()) {
-      alert('Please enter a title for the PDF');
-      return;
-    }
-
-    try {
-      const formData = new FormData();
-      formData.append('file', {
-        uri: pickedPdfFile.uri,
-        name: pickedPdfFile.name,
-        type: 'application/pdf',
-      } as any);
-      formData.append('customName', pdfName.trim());
-      formData.append('customSubtitle', pdfSubtitle.trim());
-
-      const response = await fetch(`${API_BASE}/api/upload-pdf`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'multipart/form-data' },
-        body: formData,
-      });
-
-      const result = await response.json();
-      console.log('Upload result:', result);
-
-      setIsModalVisible(false);
-      setPickedPdfFile(null);
-      setPdfName('');
-      setPdfSubtitle('');
-
-      // Përditëso PDF listën
-      const updated = await fetch(`${API_BASE}/api/pdfs`);
-      const allPdfs = await updated.json();
-
-      // Rendit PDF sipas datës (më të reja më parë)
-      const sortedPdfs = allPdfs.sort(
-        (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-
-      setPdfList(sortedPdfs);
-      await AsyncStorage.setItem('cachedPdfs', JSON.stringify(sortedPdfs));
-    } catch (err) {
-      console.error('Error uploading PDF:', err);
-    }
-  };
-
   const openPdfModal = (pdf: any) => {
     setSelectedPdf(pdf);
     setIsPdfModalVisible(true);
   };
-
-  const sendNotification = async () => {
-  if (!notificationTitle.trim() || !notificationBody.trim()) {
-    Alert.alert('Gabim', 'Ju lutem plotësoni titullin dhe përmbajtjen.');
-    return;
-  }
-
-  try {
-    const response = await fetch(`${API_BASE}/api/notify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: notificationTitle,
-        body: notificationBody,
-      }),
-    });
-
-    const result = await response.json();
-    Alert.alert('Sukses', result.message || 'Njoftimi u dërgua!');
-    await saveNotificationToStorage(notificationTitle, notificationBody);
-
-    // Pas dërgimit: pastro inputet dhe mbyll modalin
-    setNotificationTitle('');
-    setNotificationBody('');
-    setIsSecondModalVisible(false);
-  } catch (error) {
-    console.error('Gabim gjatë dërgimit të njoftimit:', error);
-    Alert.alert('Gabim', 'Nuk u dërgua push notification');
-  }
-};
-
 
   const capitalizeFirstLetter = (str: string) => {
   if (!str) return '';
@@ -343,81 +254,9 @@ const fetchNotificationCount = async () => {
               />
             )}
 
-            {role === 'admin' && (
-              <>
-                <View style={styles.button}>
-                  <Button color='white' title="Ngarko një PDF" onPress={pickPDF} />
-                </View>
-                <View style={styles.button}>
-                  <Button color='white' title="Dergo një Njoftim" onPress={() => setIsSecondModalVisible(true)} />
-                </View>
-              </>
-            )}
           </View>
         }
-      />
-
-      {/* Modal për ngarkim PDF */}
-      {role === 'admin' && (
-        <>
-        <Modal visible={isModalVisible} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Enter title and subtitle for the PDF</Text>
-              <TextInput
-                placeholder="Title"
-                value={pdfName}
-                onChangeText={setPdfName}
-                style={styles.input}
-              />
-              <TextInput
-                placeholder="Subtitle"
-                value={pdfSubtitle}
-                onChangeText={setPdfSubtitle}
-                style={styles.input}
-              />
-              <View style={styles.notificationsButton}>
-                <View style={styles.dialogButton}>
-                <Button title="Anulo" onPress={() => setIsModalVisible(false)} />
-              </View>
-              <View style={styles.buttonDialog}>
-              <Button color="white" title="Ngarko" onPress={uploadPDF} />
-              </View>
-              </View>
-            </View>
-          </View>
-        </Modal>
-        <Modal visible={isSecondModalVisible} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Send Push Notification</Text>
-              <TextInput 
-                placeholder="Titulli i njoftimit"
-                placeholderTextColor="black"
-                value={notificationTitle}
-                onChangeText={setNotificationTitle}
-                style={styles.input}
-              />
-              <TextInput
-                placeholder="Përmbajtja e njoftimit"
-                value={notificationBody}
-                onChangeText={setNotificationBody}
-                style={styles.input}
-                placeholderTextColor="black"
-              />
-              <View style={styles.notificationsButton}>
-                <View style={styles.dialogButton}>
-                <Button title="Anulo" onPress={() => setIsSecondModalVisible(false)} />
-              </View>
-              <View style={styles.buttonDialog}>
-              <Button color="white" title="Dërgo" onPress={sendNotification} />
-              </View>
-              </View>
-            </View>
-          </View>
-        </Modal>
-        </>
-      )}
+      />      
 
       {/* Modal për shfaqje PDF në fullscreen */}
       <Modal visible={isPdfModalVisible} animationType="slide">
