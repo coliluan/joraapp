@@ -80,17 +80,26 @@ const PdfModel = mongoose.model('pdfs', pdfSchema);
 
 app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
   try {
-    const { customName, customSubtitle } = req.body;  // read both fields
+    const { customName, customSubtitle } = req.body;
+    if (req.file.mimetype !== 'application/pdf')
+      return res.status(400).json({ message: 'Lejohen vetëm PDF.' });
 
-    if (req.file.mimetype !== 'application/pdf') {
-      return res.status(400).json({ message: 'Lejohen vetëm skedarë PDF.' });
-    }
+    const pdf = new PdfModel({
+      name: req.file.originalname,
+      customName,
+      customSubtitle,
+      data: req.file.buffer,
+      contentType: req.file.mimetype,
+    });
+    await pdf.save();
 
+    return res.status(200).json({ message: 'Uploaded successfully', pdfId: pdf._id });
   } catch (error) {
     console.error('❌ Error uploading PDF:', error);
-    res.status(500).json({ message: 'Gabim gjatë ruajtjes së PDF.' });
+    return res.status(500).json({ message: 'Gabim gjatë ruajtjes së PDF.' });
   }
 });
+
 
 app.get('/api/pdf/:id', async (req, res) => {
   try {
