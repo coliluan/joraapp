@@ -2,7 +2,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import i18n from '../language/index'; // saktëso rrugën
+import i18n from '../language/index';
 
 interface LanguageProviderProps {
   children: React.ReactNode;

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { Image, Linking, ScrollView, StyleSheet, Text } from 'react-native';
 import { Card, IconButton } from 'react-native-paper';
-import { API_BASE } from '../config/api';
+import { API_BASE } from '../../config/api';
 
 interface Notification {
   title: string;

@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert, FlatList, Image, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { globalStyles } from '../../assets/globalStyles';
-import { API_BASE } from '../config/api';
+import { API_BASE } from '../../config/api';
 
 type Pdf = {
   _id: string;

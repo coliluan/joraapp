@@ -1,5 +1,5 @@
-import { ENDPOINTS, getApiUrl } from '@/app/config/api';
 import { globalStyles } from '@/assets/globalStyles';
+import { ENDPOINTS, getApiUrl } from '@/config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';

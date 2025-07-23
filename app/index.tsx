@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button, PaperProvider } from 'react-native-paper';
 import Animated, {
   runOnJS,
@@ -71,44 +71,61 @@ export default function App() {
   if (showMain) {
     return (
       <PaperProvider>
-        <View style={styles.wrapper}>
-          <View style={styles.container}>
-            <Text style={styles.welcome}>{t('index.title')}</Text>
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('../assets/images/jora-logo.png')}
-                style={{ width: 351, height: 49 }}
-              />
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.wrapper}>
+            <View style={styles.topVisitor}>
+              <TouchableOpacity onPress={() => router.replace('/(tabs)/home')}>
+                <Text style={styles.visitor}>Vazhdo si mysafir</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.subtitle}>{t('index.text')}</Text>
+            <View style={styles.container}>
+              <Text style={styles.welcome}>{t('index.title')}</Text>
+              <View style={styles.logoContainer}>
+                <Image
+                  source={require('../assets/images/jora-logo.png')}
+                  style={{ width: 351, height: 49 }}
+                />
+              </View>
+              <Text style={styles.subtitle}>{t('index.text')}</Text>
+            </View>
+            <View style={styles.buttonContainer}>
+              <Button
+                mode="contained"
+                onPress={() => router.push('/registired')}
+                style={globalStyles.registerButton}
+                labelStyle={styles.buttonText}
+              >
+                {t('index.register')}
+              </Button>
+              <Button
+                mode="outlined"
+                onPress={() => router.push('/logIn')}
+                style={styles.logButton}
+                labelStyle={[styles.buttonText, { color: '#D32F2F' }]}
+              >
+                {t('logIn')}
+              </Button>
+            </View>
+
+            <View style={styles.customVisitor}>
+              <TouchableOpacity onPress={() => router.replace('/(tabs)/home')}>
+                <Text style={styles.visitor}>Vazhdo si mysafir</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          <View style={styles.buttonContainer}>
-            <Button
-              mode="contained"
-              onPress={() => router.push('/registired')}
-              style={globalStyles.registerButton}
-              labelStyle={styles.buttonText}
-            >
-              {t('index.register')}
-            </Button>
-            <Button
-              mode="outlined"
-              onPress={() => router.push('/logIn')}
-              style={styles.logButton}
-              labelStyle={[styles.buttonText, { color: '#D32F2F' }]}
-            >
-              {t('logIn')}
-            </Button>
-          </View>
-        </View>
+        </SafeAreaView>
       </PaperProvider>
     );
   }
 
-  return null; // fallback për siguri
+  return null;
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FAFAFA',
+  },
   onboardingContainer: {
     flex: 1,
     backgroundColor: '#FF3D00',
@@ -124,6 +141,20 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingBottom: 124,
     backgroundColor: '#FAFAFA',
+  },
+  topVisitor: {
+    alignItems: 'flex-end',
+    padding: 20,
+  },
+  customVisitor: {
+    alignItems: 'center',
+    paddingBottom: 20,
+    marginTop: 20,
+  },
+  visitor: {
+    fontSize: 16,
+    color: '#007AFF',
+    textDecorationLine: 'underline',
   },
   container: {
     flex: 1,

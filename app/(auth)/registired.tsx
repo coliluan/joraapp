@@ -18,7 +18,7 @@ import {
   View,
 } from 'react-native';
 import PhoneInput from 'react-native-phone-number-input';
-import { ENDPOINTS, getApiUrl } from '../config/api';
+import { ENDPOINTS, getApiUrl } from '../../config/api';
 
 
 const RegisterScreen = () => {

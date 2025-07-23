@@ -1,5 +1,5 @@
-import { ENDPOINTS, getApiUrl } from '@/app/config/api';
 import { globalStyles } from '@/assets/globalStyles';
+import { ENDPOINTS, getApiUrl } from '@/config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';

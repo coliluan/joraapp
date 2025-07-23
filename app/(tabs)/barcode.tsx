@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { ENDPOINTS, getApiUrl } from '../config/api';
+import { ENDPOINTS, getApiUrl } from '../../config/api';
 
 const styles = StyleSheet.create({
   container: {

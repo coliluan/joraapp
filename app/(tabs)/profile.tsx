@@ -20,7 +20,7 @@ import {
   Provider as PaperProvider,
   Portal,
 } from 'react-native-paper';
-import { ENDPOINTS, getApiUrl } from '../config/api';
+import { ENDPOINTS, getApiUrl } from '../../config/api';
 
 const ProfileScreen = () => {
   const { t } = useTranslation();
