@@ -103,6 +103,32 @@ export default function RootLayout() {
         }}
         name="components/notificationModal"
       />
+      <Stack.Screen
+        options={{
+          title: 'Historiku',
+          headerShown: true,
+          headerTitleAlign: 'center',
+          headerTintColor: '#171717',
+          headerTitleStyle: { fontWeight: '500' },
+          gestureEnabled: true,
+          headerBackVisible: false,
+          headerBackTitle: '',
+        }}
+        name="components/history"
+      />
+      <Stack.Screen
+        options={{
+          title: 'Shërbimet',
+          headerShown: true,
+          headerTitleAlign: 'center',
+          headerTintColor: '#171717',
+          headerTitleStyle: { fontWeight: '500' },
+          gestureEnabled: true,
+          headerBackVisible: false,
+          headerBackTitle: '',
+        }}
+        name="components/jora_services"
+      />
     </Stack>
     </LanguageProvider>
     

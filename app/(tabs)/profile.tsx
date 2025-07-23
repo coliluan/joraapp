@@ -11,6 +11,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -29,16 +30,37 @@ const ProfileScreen = () => {
   const [number, setNumber] = useState('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
+  const [secondDialogVisible, setSecondDialogVisible] = useState(false); // ✅ ADDED MISSING STATE
+  const [formData, setFormData] = useState({
+      firstName: '',
+      password: '',
+    });
+    const [passwordVisible, setPasswordVisible] = useState(false);
 
   const showDialog = () => setVisible(true);
   const hideDialog = () => setVisible(false);
+
+   const handleInputChange = (field: string, value: string) => {
+    setFormData({ ...formData, [field]: value });
+  };
 
   useEffect(() => {
     const loadUserDetails = async () => {
       try {
         const userData = await AsyncStorage.getItem('loggedInUser');
+
+        if (!userData) {
+        setSecondDialogVisible(true); // 👈 Open second dialog automatically
+        return;
+      }
+
         if (userData) {
           const parsed = JSON.parse(userData);
+
+          if (parsed.isGuest === true) {
+        setSecondDialogVisible(true); // 👈 Open second dialog automatically
+        return;
+      }
           setUserName(parsed.firstName);
           if (parsed.photo) setProfileImage(parsed.photo);
 
@@ -81,21 +103,15 @@ const ProfileScreen = () => {
         setProfileImage(base64Img);
 
         if (userName) {
-          const res = await fetch(
-            getApiUrl(ENDPOINTS.USER_PHOTO),
-            {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ firstName: userName, photo: base64Img }),
-            }
-          );
+          const res = await fetch(getApiUrl(ENDPOINTS.USER_PHOTO), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ firstName: userName, photo: base64Img }),
+          });
           const data = await res.json();
           if (res.ok) {
             console.log('✅ Foto u ruajt!');
-            await AsyncStorage.setItem(
-              'loggedInUser',
-              JSON.stringify(data.user)
-            );
+            await AsyncStorage.setItem('loggedInUser', JSON.stringify(data.user));
             setProfileImage(data.user.photo);
           } else {
             Alert.alert('Gabim', data.message);
@@ -107,6 +123,36 @@ const ProfileScreen = () => {
     }
   };
 
+  const handleLogin = async () => {
+  try {
+    const response = await fetch(getApiUrl(ENDPOINTS.LOGIN), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      Alert.alert('Gabim', data.message || 'Kredencialet janë të pasakta');
+    } else {
+      await AsyncStorage.setItem('loggedInUser', JSON.stringify(data.user));
+
+      // ✅ Fix: update state manually or reload
+      setSecondDialogVisible(false); // 👈 Hide the dialog
+      setUserName(data.user.firstName);
+      setNumber(data.user.number);
+      if (data.user.photo) setProfileImage(data.user.photo);
+
+      Alert.alert('Sukses', 'Jeni identifikuar me sukses');
+      router.replace('/(tabs)/home');
+    }
+  } catch (error) {
+    Alert.alert('Gabim', 'Nuk u lidh me serverin');
+    console.error('Login error:', error);
+  }
+};
+
   const handleLogOutUser = async () => {
     try {
       const userData = await AsyncStorage.getItem('loggedInUser');
@@ -114,9 +160,9 @@ const ProfileScreen = () => {
         Alert.alert('Gabim', 'Nuk u gjet përdoruesi.');
         return;
       }
-  
+
       await AsyncStorage.removeItem('loggedInUser');
-  
+
       Alert.alert('Sukses', 'U çkyçët me sukses.');
       router.replace('/');
     } catch (error) {
@@ -124,7 +170,7 @@ const ProfileScreen = () => {
       Alert.alert('Gabim', 'Ndodhi një gabim gjatë çkyçjes.');
     }
   };
-  
+
   const options = [
     {
       label: t('profile.profile'),
@@ -144,13 +190,13 @@ const ProfileScreen = () => {
   ] as const;
 
   const capitalizeFirstLetter = (str: string) => {
-  if (!str) return '';
-  return str.charAt(0).toUpperCase() + str.slice(1);
-};
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
 
-const handleEmailPress = () => {
-  Linking.openURL('mailto:support@jora.center');
-};
+  const handleEmailPress = () => {
+    Linking.openURL('mailto:support@jora.center');
+  };
 
   return (
     <PaperProvider>
@@ -205,9 +251,12 @@ const handleEmailPress = () => {
                 <Text style={styles.optionText}>{t('logout')}</Text>
               </TouchableOpacity>
             </View>
+
             <View>
               <Text style={styles.helpText}>{t('profile.help')}</Text>
-              <Text style={styles.support} onPress={handleEmailPress}>support@jora.center</Text>
+              <Text style={styles.support} onPress={handleEmailPress}>
+                support@jora.center
+              </Text>
             </View>
           </View>
         </ScrollView>
@@ -220,7 +269,9 @@ const handleEmailPress = () => {
               <Text style={globalStyles.dialogText}>{t('titleRemoveModal')}</Text>
             </Dialog.Content>
             <Dialog.Actions>
-              <Button style={globalStyles.dialogButton} onPress={hideDialog}>{t('no')}</Button>
+              <Button style={globalStyles.dialogButton} onPress={hideDialog}>
+                {t('no')}
+              </Button>
               <Button
                 style={globalStyles.buttonDialog}
                 onPress={() => {
@@ -233,10 +284,63 @@ const handleEmailPress = () => {
             </Dialog.Actions>
           </Dialog>
         </Portal>
+
+        <Portal>
+          <Dialog
+            style={globalStyles.modal}
+            visible={secondDialogVisible}
+            dismissable={false}
+          >
+            <Dialog.Icon icon="alert" />
+            <Dialog.Title style={globalStyles.dialogTitle}>Ju lutem identifikohuni</Dialog.Title>
+            <Dialog.Content>
+              <View style={styles.custom}>
+                      <TextInput
+                        style={styles.input}
+                        placeholder={t('name')}
+                        placeholderTextColor="#1F1F1F"
+                        value={formData.firstName}
+                        onChangeText={(text) => handleInputChange('firstName', text)}
+                      />
+                      <View style={styles.input}>
+                        <TextInput
+                          style={styles.passwordInput}
+                          placeholder={t('placeHolder')}
+                          secureTextEntry={!passwordVisible}
+                          placeholderTextColor="#1F1F1F"
+                          value={formData.password}
+                          onChangeText={(text) => handleInputChange('password', text)}
+                        />
+                        <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
+                          <Image
+                            source={require('../../assets/images/eyeIcon.png')}
+                            style={styles.eyeIcon}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button
+                style={globalStyles.dialogButton}
+                onPress={() => router.push('/registired')}
+              >
+                Register
+              </Button>
+              <Button
+                style={globalStyles.buttonDialog}
+                 onPress={handleLogin}
+              >
+                Login
+              </Button>
+            </Dialog.Actions>
+          </Dialog>
+        </Portal>
       </View>
     </PaperProvider>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -310,6 +414,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'right',
     marginBottom: 30,
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: 18,
+    color: '#000',
+  },
+  eyeIcon: {
+    width: 20,
+    height: 20,
+    tintColor: '#999',
+  },
+   custom: {
+    gap: 20,
+  },
+  input: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 5,
+    alignItems: 'center',
+    height: 40,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    fontSize: 18,
   },
 });
 

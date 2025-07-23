@@ -21,7 +21,6 @@ type Pdf = {
 const HomeScreen = () => {
   const { t } = useTranslation();
   const isFocused = useIsFocused();
-
   const [user, setUser] = useState<{ name: string; number: string; barcode: string; id: string }>({ name: '', number: '', barcode: '', id: '' });
   const [pdfList, setPdfList] = useState<Pdf[]>([]);
   const [selectedPdf, setSelectedPdf] = useState<Pdf | null>(null);
@@ -132,7 +131,11 @@ const HomeScreen = () => {
     setIsPdfModalVisible(true);
   };
 
-  const capitalize = (str: string) => str?.charAt(0).toUpperCase() + str.slice(1);
+  const capitalize = (str?: string) => {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
 
   return (
     <>
@@ -152,18 +155,31 @@ const HomeScreen = () => {
                 </View>
               )}
             </View>
-
+              
             <View style={styles.header}>
+              
               <Text style={globalStyles.title}>
                 {t('home.title')} <Text style={styles.name}>{capitalize(user.name)}</Text>,
               </Text>
               <Text style={globalStyles.phone}>{user.number}</Text>
+              
             </View>
 
             <Image source={{ uri: barcodeUrl }} style={styles.barcode} />
-            <Text style={styles.sectionTitle}>{t('home.sectionTitle')}</Text>
+            {!user.name && (
+              <TouchableOpacity onPress={() => router.push('/components/history')}>
+                <Image style={styles.guestsImage} source={require('../../assets/images/jora-guests.png')} />
+              </TouchableOpacity>
+            )}
+            {!user.name && (
+              <TouchableOpacity onPress={() => router.push('/components/jora_services')}>
+                <Image style={styles.guestsImage} source={require('../../assets/images/jora-guests2.jpg')} />
+              </TouchableOpacity>
+            )}
+            <Text style={styles.sectionTitle}>{t('home.sectionTitle')}</Text> 
           </>
         }
+        
         ListFooterComponent={
           <View>
             {pdfList.length === 0 ? (
@@ -301,7 +317,13 @@ badgeText: {
     paddingVertical: 6,
     borderRadius: 8,
   },
-
+  guestsImage: {
+    width: '100%',
+    height: 200,
+    marginBottom: 20,
+    objectFit: 'contain',
+    borderRadius: 10, 
+  },
 });
 
 export default HomeScreen;
