@@ -204,7 +204,7 @@ const HomeScreen = () => {
                 onPress={() => setIsPdfModalVisible(false)}
                 style={styles.closeButton}
               >
-                <Text style={{ fontSize: 16, color: 'red', fontWeight: 'bold' }}>Mbyll</Text>
+                <Text style={{ fontSize: 16, color: 'red', fontWeight: 'bold' }}>{t('close')}</Text>
               </TouchableOpacity>
             </>
           )}

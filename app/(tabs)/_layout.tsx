@@ -113,6 +113,7 @@ const Layout = () => {
       <Tabs.Screen name="profile/password" options={{ href: null }} />
       <Tabs.Screen name="profile/language" options={{ href: null }} />
       <Tabs.Screen name="profile/delete_account" options={{ href: null }} />
+      <Tabs.Screen name="components/notificationModal" options={{ href: null }} />
     </Tabs>
   );
 };

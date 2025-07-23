@@ -90,6 +90,19 @@ export default function RootLayout() {
         }}
         name="(auth)/profile/language"
       />
+      <Stack.Screen
+        options={{
+          title: t('notification'),
+          headerShown: true,
+          headerTitleAlign: 'center',
+          headerTintColor: '#171717',
+          headerTitleStyle: { fontWeight: '500' },
+          gestureEnabled: true,
+          headerBackVisible: false,
+          headerBackTitle: '',
+        }}
+        name="components/notificationModal"
+      />
     </Stack>
     </LanguageProvider>
     

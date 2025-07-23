@@ -111,7 +111,7 @@ const PassWordScreen = () => {
           <View style={globalStyles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
-              placeholder={t('placeHolder')}
+              placeholder={t('password.old')}
               secureTextEntry={!passwordVisible}
               placeholderTextColor="#rgba(31, 31, 31, 1)"
               value={oldPassword}
@@ -128,7 +128,7 @@ const PassWordScreen = () => {
           <View style={globalStyles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
-              placeholder={t('password.old')}
+              placeholder={t('password.new')}
               secureTextEntry={!passwordVisible}
               placeholderTextColor="#rgba(31, 31, 31, 1)"
               value={newPassword}

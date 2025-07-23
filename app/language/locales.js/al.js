@@ -13,6 +13,8 @@ const al = {
     modalRemove: "Dilni",
     titleModal: "A jeni i sigurt që dëshironi të fshini llogarinë tuaj?",
     titleRemoveModal: "A jeni i sigurt që do të dalësh nga llogaria jote?",
+    close: "Mbyll",
+    notification: "Njoftimet",
   languages: {
     al: "Shqip",
     en: "Anglisht",
@@ -47,6 +49,7 @@ const al = {
   },
   password: {
     old : "Fjalëkalimi i vjetër",
+    new: "Fjalëkalimi i ri",
     confirm: "Konfirmo Fjalëkalimin",
     button :"Ndrysho Fjalëkalimin",
     snackBar: "Fjalëkalimi u ndryshua me sukses!"

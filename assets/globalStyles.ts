@@ -4,7 +4,7 @@ import { StyleSheet } from 'react-native';
 export const globalStyles = StyleSheet.create({
   notification: {
     alignItems: 'flex-end',
-    marginBottom: 45,
+    marginBottom: 15,
   },
   title: {
     fontSize: 18,
