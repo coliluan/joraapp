@@ -1,4 +1,3 @@
-import { globalStyles } from '@/assets/globalStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -25,7 +24,7 @@ export default function App() {
       setTimeout(() => {
         opacity.value = withTiming(0, { duration: 800 }, (finished) => {
           if (finished) {
-            runOnJS(checkLoginStatus)(); // kontrollon login pas animacionit
+            runOnJS(checkLoginStatus)();
           }
         });
       }, 2000);
@@ -76,18 +75,18 @@ export default function App() {
             <View style={styles.container}>
               <Text style={styles.welcome}>{t('index.title')}</Text>
               <View style={styles.logoContainer}>
-                <Image
-                  source={require('../assets/images/jora-logo.png')}
-                  style={{ width: 351, height: 49 }}
+                <Image style={styles.image}
+                  source={require('../assets/images/jora-onboarding.png')}
+                  
                 />
               </View>
-              <Text style={styles.subtitle}>{t('index.text')}</Text>
+              {/* <Text style={styles.subtitle}>{t('index.text')}</Text> */}
             </View>
             <View style={styles.buttonContainer}>
               <Button
                 mode="contained"
                 onPress={() => router.push('/registired')}
-                style={globalStyles.registerButton}
+                style={styles.buttons}
                 labelStyle={styles.buttonText}
               >
                 {t('index.register')}
@@ -95,7 +94,7 @@ export default function App() {
               <Button
                 mode="outlined"
                 onPress={() => router.push('/logIn')}
-                style={styles.logButton}
+                style={styles.buttons}
                 labelStyle={[styles.buttonText, { color: '#D32F2F' }]}
               >
                 {t('logIn')}
@@ -119,7 +118,7 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#EB2328',
   },
   onboardingContainer: {
     flex: 1,
@@ -135,7 +134,7 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     paddingBottom: 124,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#EB2328',
   },
   topVisitor: {
     alignItems: 'flex-end',
@@ -147,20 +146,19 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   visitor: {
-    fontSize: 16,
-    color: '#007AFF',
+    fontSize: 12,
+    color: '#fff',
     textDecorationLine: 'underline',
   },
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FAFAFA',
     paddingHorizontal: 20,
   },
   welcome: {
     fontSize: 25,
-    marginBottom: 10,
+    marginBottom: 30,
     color: 'rgba(23, 23, 23, 1)',
     fontWeight: '500',
   },
@@ -168,6 +166,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
+  },
+  image: {
+    width: '100%', 
   },
   subtitle: {
     textAlign: 'center',
@@ -181,10 +182,17 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     gap: 20,
-    backgroundColor: '#FAFAFA',
   },
-  logButton: {
-    borderColor: '#D32F2F',
+  // logButton: {
+  //   borderColor: '#D32F2F',
+  //   width: 180,
+  //   height: 60,
+  //   alignItems: 'center',
+  //   justifyContent: 'center',
+  //   borderRadius: 0,
+  // },
+  buttons:{
+    backgroundColor:'#FFFFFF',
     width: 180,
     height: 60,
     alignItems: 'center',
@@ -194,7 +202,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 20,
     fontWeight: '500',
-    color: '#FFFFFF',
+    color: '#EB2328',
     fontFamily: 'Poppins-Regular',
   },
 });

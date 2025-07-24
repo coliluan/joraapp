@@ -70,13 +70,7 @@ export const globalStyles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 0,
   },
-  // guestsImage: {
-  //   width: '100vw',
-  //   marginBottom: 20,
-  //   resizeMode: 'contain',
-  //   borderRadius: 10 ,
-  //   overflow: 'hidden',
-  // },
+ 
   guestsImageWrapper: {
   width: '100%',
   height: 200,

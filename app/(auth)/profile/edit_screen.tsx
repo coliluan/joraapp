@@ -96,7 +96,7 @@ const EditScreen = () => {
       } else {
         console.warn('❌ Failed to fetch updated user:', data.message);
       }
-    } catch (err) {
+    } catch (err) { 
       console.error('❌ Error fetching user:', err);
     }
   }, []);
