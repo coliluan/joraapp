@@ -27,7 +27,19 @@ const PORT = process.env.PORT || 8000;
 const MONGO_URL = process.env.MONGO_URL || 'mongodb://localhost:27017/dbconnect';
 
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const upload = multer({
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Vetëm skedarë PDF lejohen.'));
+    }
+  },
+});
+
 
 // Middleware
 app.use(cors());

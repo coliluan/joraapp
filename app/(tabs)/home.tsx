@@ -3,7 +3,17 @@ import { useIsFocused } from '@react-navigation/native';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Modal,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { WebView } from 'react-native-webview';
 import { globalStyles } from '../../assets/globalStyles';
 import { API_BASE } from '../../config/api';
@@ -17,6 +27,8 @@ type Pdf = {
   [key: string]: any;
 };
 
+const capitalize = (str?: string) => str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+
 const HomeScreen = () => {
   const { t } = useTranslation();
   const isFocused = useIsFocused();
@@ -26,18 +38,31 @@ const HomeScreen = () => {
   const [selectedPdf, setSelectedPdf] = useState<Pdf | null>(null);
   const [isPdfModalVisible, setIsPdfModalVisible] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const barcodeUrl = `${API_BASE}/api/barcode/${user?.barcode || ''}`;
 
   const fetchPdfs = useCallback(async () => {
     try {
+      const cached = await AsyncStorage.getItem('cachedPdfs');
+      const cachedParsed: Pdf[] = cached ? JSON.parse(cached) : [];
+      if (cachedParsed.length) setPdfList(cachedParsed);
+
       const res = await fetch(`${API_BASE}/api/pdfs`);
       const data: Pdf[] = await res.json();
-      const sorted = data.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
-      setPdfList(sorted);
-      await AsyncStorage.setItem('cachedPdfs', JSON.stringify(sorted));
+      const sorted = data.sort(
+        (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+      );
+
+      if (sorted[0]?._id !== cachedParsed[0]?._id) {
+        setPdfList(sorted);
+        await AsyncStorage.setItem('cachedPdfs', JSON.stringify(sorted));
+      }
     } catch (err) {
       console.error('Error fetching PDFs:', err);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -52,25 +77,18 @@ const HomeScreen = () => {
     }
   }, []);
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchPdfs();
+    setRefreshing(false);
+  }, [fetchPdfs]);
+
   useEffect(() => {
     if (isFocused) {
-      loadUserFromStorage().then(async () => {
-        if (user && user._id) {
-          
-        }
-      });
-
+      loadUserFromStorage();
       fetchNotificationCount();
       fetchPdfs();
     }
-  }, [isFocused]);
-
-  useEffect(() => {
-    let interval: any;
-    if (isFocused) {
-      interval = setInterval(fetchPdfs, 15000);
-    }
-    return () => clearInterval(interval);
   }, [isFocused]);
 
   const openPdfModal = (pdf: Pdf) => {
@@ -78,16 +96,16 @@ const HomeScreen = () => {
     setIsPdfModalVisible(true);
   };
 
-  const capitalize = (str?: string) => {
-    if (!str) return '';
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  };
-
   return (
     <>
+      <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
+
       <FlatList
-        data={[]}
-        renderItem={null}
+        data={pdfList}
+        keyExtractor={(item) => item._id}
+        numColumns={2}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
         contentContainerStyle={styles.scrollContainer}
         ListHeaderComponent={
           <>
@@ -99,7 +117,6 @@ const HomeScreen = () => {
                   }
                 }}
                 disabled={user?.isGuest || !user?.firstName}
-                
               >
                 <Image source={require('../../assets/images/notification.png')} />
               </TouchableOpacity>
@@ -112,7 +129,8 @@ const HomeScreen = () => {
 
             <View style={styles.header}>
               <Text style={globalStyles.title}>
-                {t('home.title')} <Text style={styles.name}>{capitalize(user?.firstName)}</Text>,
+                {t('home.title')}{' '}
+                <Text style={styles.name}>{capitalize(user?.firstName)}</Text>,
               </Text>
               <Text style={globalStyles.phone}>{user?.number || ''}</Text>
             </View>
@@ -123,57 +141,54 @@ const HomeScreen = () => {
 
             {!user?.firstName && (
               <>
-              <View style={globalStyles.guestsImageWrapper}>
-                <TouchableOpacity onPress={() => router.push('/components/history')}>
-                  <Image
-                    source={require('../../assets/images/jora-guests.png')}
-                    style={globalStyles.guestsImage}
-                    resizeMode="cover"
-                  />
-                </TouchableOpacity>
-                  
-                </View>
-                <View  style={globalStyles.guestsImageWrapper}>
-                  <TouchableOpacity onPress={() => router.push('/components/jora_services')}>
-                    <Image 
-                    source={require('../../assets/images/jora-guests2.jpg')}
-                    style={globalStyles.guestsImage}
-                    resizeMode="cover"
-                  />
+                <View style={globalStyles.guestsImageWrapper}>
+                  <TouchableOpacity onPress={() => router.push('/components/history')}>
+                    <Image
+                      source={require('../../assets/images/jora-guests.webp')}
+                      style={globalStyles.guestsImage}
+                      resizeMode="cover"
+                    />
                   </TouchableOpacity>
-                  
                 </View>
-                {/* <TouchableOpacity onPress={() => router.push('/components/jora_services')}>
-                  <Image style={globalStyles.guestsImage} source={require('../../assets/images/jora-guests2.jpg')} />
-                </TouchableOpacity> */}
+                <View style={globalStyles.guestsImageWrapper}>
+                  <TouchableOpacity onPress={() => router.push('/components/jora_services')}>
+                    <Image
+                      source={require('../../assets/images/jora-guests2.jpg')}
+                      style={globalStyles.guestsImage}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                </View>
               </>
             )}
 
             <Text style={styles.sectionTitle}>{t('home.sectionTitle')}</Text>
           </>
         }
-        ListFooterComponent={
-          <View>
-            {pdfList.length === 0 ? (
-              <Text style={{ textAlign: 'center', marginTop: 20 }}>Loading PDFs...</Text>
-            ) : (
-              <FlatList
-                data={pdfList}
-                keyExtractor={(item) => item._id}
-                numColumns={2}
-                contentContainerStyle={styles.card}
-                renderItem={({ item }) => (
-                  <TouchableOpacity onPress={() => openPdfModal(item)} style={styles.cardImage}>
-                    <View style={styles.pdfContainer}>
-                      <Image source={require('../../assets/images/fletushka.png')} style={{ width: '100%', height: 217, borderRadius: 5 }} />
-                    </View>
-                    <Text style={styles.pdfName}>{item.customName || item.name || item.filename || 'Untitled PDF'}</Text>
-                    {item.customSubtitle && <Text style={styles.pdfSubtitle}>{item.customSubtitle}</Text>}
-                  </TouchableOpacity>
-                )}
+        renderItem={({ item }) => (
+          <TouchableOpacity onPress={() => openPdfModal(item)} style={styles.cardImage}>
+            <View style={styles.pdfContainer}>
+              <Image
+                source={require('../../assets/images/fletushka.png')}
+                style={{ width: '100%', height: 217, borderRadius: 5 }}
               />
+            </View>
+            <Text style={styles.pdfName}>
+              {item.customName || item.name || item.filename || 'Untitled PDF'}
+            </Text>
+            {item.customSubtitle && (
+              <Text style={styles.pdfSubtitle}>{item.customSubtitle}</Text>
             )}
-          </View>
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={
+          loading ? (
+            <ActivityIndicator size="large" color="#EB2328" style={{ marginTop: 30 }} />
+          ) : (
+            <Text style={{ textAlign: 'center', marginTop: 30 }}>
+              {t('home.noPdfs') || 'No PDFs available.'}
+            </Text>
+          )
         }
       />
 
@@ -190,6 +205,8 @@ const HomeScreen = () => {
               <TouchableOpacity
                 onPress={() => setIsPdfModalVisible(false)}
                 style={styles.closeButton}
+                accessible
+                accessibilityLabel="Close PDF modal"
               >
                 <Text style={{ fontSize: 16, color: 'red', fontWeight: 'bold' }}>{t('close')}</Text>
               </TouchableOpacity>
@@ -241,10 +258,6 @@ const styles = StyleSheet.create({
     height: 217,
     width: '100%',
   },
-  pdfImage: {
-    flex: 1,
-    borderRadius: 5,
-  },
   pdfName: {
     fontSize: 15,
     fontWeight: '500',
@@ -287,7 +300,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
   },
-
 });
 
 export default HomeScreen;
