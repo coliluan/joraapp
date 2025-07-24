@@ -1,14 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useIsFocused } from '@react-navigation/native';
-import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, FlatList, Image, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { globalStyles } from '../../assets/globalStyles';
 import { API_BASE } from '../../config/api';
+import { useUserStore } from '../store/useUserStore';
 
 type Pdf = {
   _id: string;
@@ -21,31 +20,14 @@ type Pdf = {
 const HomeScreen = () => {
   const { t } = useTranslation();
   const isFocused = useIsFocused();
-  const [user, setUser] = useState<{ name: string; number: string; barcode: string; id: string }>({ name: '', number: '', barcode: '', id: '' });
+  const { user, loadUserFromStorage } = useUserStore();
+
   const [pdfList, setPdfList] = useState<Pdf[]>([]);
   const [selectedPdf, setSelectedPdf] = useState<Pdf | null>(null);
   const [isPdfModalVisible, setIsPdfModalVisible] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
 
-  const barcodeUrl = `${API_BASE}/api/barcode/${user.barcode}`;
-
-  const loadUserFromStorage = useCallback(async () => {
-    const data = await AsyncStorage.getItem('loggedInUser');
-    if (!data) return;
-
-    const parsed = JSON.parse(data);
-    setUser({
-      name: parsed.firstName,
-      number: parsed.number,
-      barcode: parsed.barcode,
-      id: parsed._id,
-    });
-
-    const token = await registerForPushNotificationsAsync();
-    if (token) {
-      await sendPushTokenToBackend(parsed._id, token);
-    }
-  }, []);
+  const barcodeUrl = `${API_BASE}/api/barcode/${user?.barcode || ''}`;
 
   const fetchPdfs = useCallback(async () => {
     try {
@@ -70,49 +52,14 @@ const HomeScreen = () => {
     }
   }, []);
 
-  const registerForPushNotificationsAsync = async () => {
-    if (!Device.isDevice) return;
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-
-    if (finalStatus !== 'granted') {
-      Alert.alert('Push Notifications', 'Permission not granted');
-      return;
-    }
-
-    const tokenData = await Notifications.getExpoPushTokenAsync();
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
-      });
-    }
-
-    return tokenData.data;
-  };
-
-  const sendPushTokenToBackend = async (userId: string, token: string) => {
-    try {
-      await fetch(`${API_BASE}/api/store-token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, userId }),
-      });
-    } catch (err) {
-      console.error('Error sending token to backend:', err);
-    }
-  };
-
   useEffect(() => {
     if (isFocused) {
-      loadUserFromStorage();
+      loadUserFromStorage().then(async () => {
+        if (user && user._id) {
+          
+        }
+      });
+
       fetchNotificationCount();
       fetchPdfs();
     }
@@ -132,10 +79,9 @@ const HomeScreen = () => {
   };
 
   const capitalize = (str?: string) => {
-  if (!str) return '';
-  return str.charAt(0).toUpperCase() + str.slice(1);
-};
-
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
 
   return (
     <>
@@ -146,7 +92,15 @@ const HomeScreen = () => {
         ListHeaderComponent={
           <>
             <View style={globalStyles.notification}>
-              <TouchableOpacity onPress={() => router.push('/components/notificationModal')}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (!user?.isGuest && user?.firstName) {
+                    router.push('/components/notificationModal');
+                  }
+                }}
+                disabled={user?.isGuest || !user?.firstName}
+                
+              >
                 <Image source={require('../../assets/images/notification.png')} />
               </TouchableOpacity>
               {notificationCount > 0 && (
@@ -155,31 +109,49 @@ const HomeScreen = () => {
                 </View>
               )}
             </View>
-              
+
             <View style={styles.header}>
-              
               <Text style={globalStyles.title}>
-                {t('home.title')} <Text style={styles.name}>{capitalize(user.name)}</Text>,
+                {t('home.title')} <Text style={styles.name}>{capitalize(user?.firstName)}</Text>,
               </Text>
-              <Text style={globalStyles.phone}>{user.number}</Text>
-              
+              <Text style={globalStyles.phone}>{user?.number || ''}</Text>
             </View>
 
-            <Image source={{ uri: barcodeUrl }} style={styles.barcode} />
-            {!user.name && (
-              <TouchableOpacity onPress={() => router.push('/components/history')}>
-                <Image style={styles.guestsImage} source={require('../../assets/images/jora-guests.png')} />
-              </TouchableOpacity>
+            {user?.barcode && (
+              <Image source={{ uri: barcodeUrl }} style={styles.barcode} />
             )}
-            {!user.name && (
-              <TouchableOpacity onPress={() => router.push('/components/jora_services')}>
-                <Image style={styles.guestsImage} source={require('../../assets/images/jora-guests2.jpg')} />
-              </TouchableOpacity>
+
+            {!user?.firstName && (
+              <>
+              <View style={globalStyles.guestsImageWrapper}>
+                <TouchableOpacity onPress={() => router.push('/components/history')}>
+                  <Image
+                    source={require('../../assets/images/jora-guests.png')}
+                    style={globalStyles.guestsImage}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
+                  
+                </View>
+                <View  style={globalStyles.guestsImageWrapper}>
+                  <TouchableOpacity onPress={() => router.push('/components/jora_services')}>
+                    <Image 
+                    source={require('../../assets/images/jora-guests2.jpg')}
+                    style={globalStyles.guestsImage}
+                    resizeMode="cover"
+                  />
+                  </TouchableOpacity>
+                  
+                </View>
+                {/* <TouchableOpacity onPress={() => router.push('/components/jora_services')}>
+                  <Image style={globalStyles.guestsImage} source={require('../../assets/images/jora-guests2.jpg')} />
+                </TouchableOpacity> */}
+              </>
             )}
-            <Text style={styles.sectionTitle}>{t('home.sectionTitle')}</Text> 
+
+            <Text style={styles.sectionTitle}>{t('home.sectionTitle')}</Text>
           </>
         }
-        
         ListFooterComponent={
           <View>
             {pdfList.length === 0 ? (
@@ -205,7 +177,6 @@ const HomeScreen = () => {
         }
       />
 
-      {/* Modal PDF */}
       <Modal visible={isPdfModalVisible} animationType="slide">
         <View style={{ flex: 1 }}>
           {selectedPdf && (
@@ -237,7 +208,6 @@ const styles = StyleSheet.create({
     paddingBottom: 65,
     backgroundColor: '#FAFAFA',
   },
-
   header: {
     marginBottom: 27,
   },
@@ -273,7 +243,7 @@ const styles = StyleSheet.create({
   },
   pdfImage: {
     flex: 1,
-  borderRadius: 5,
+    borderRadius: 5,
   },
   pdfName: {
     fontSize: 15,
@@ -292,21 +262,21 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   badge: {
-  position: 'absolute',
-  top: -5,
-  right: -5,
-  backgroundColor: '#EB2328',
-  borderRadius: 10,
-  width: 20,
-  height: 20,
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-badgeText: {
-  color: '#fff',
-  fontSize: 12,
-  fontWeight: 'bold',
-},
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#EB2328',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
   closeButton: {
     position: 'absolute',
     top: 72,
@@ -317,13 +287,7 @@ badgeText: {
     paddingVertical: 6,
     borderRadius: 8,
   },
-  guestsImage: {
-    width: '100%',
-    height: 200,
-    marginBottom: 20,
-    objectFit: 'contain',
-    borderRadius: 10, 
-  },
+
 });
 
 export default HomeScreen;

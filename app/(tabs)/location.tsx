@@ -3,8 +3,10 @@ import { router } from 'expo-router';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useUserStore } from '../store/useUserStore';
 
 const App = () => {
+const user = useUserStore(state => state.user);
 
   const { t } = useTranslation();
   
@@ -26,7 +28,13 @@ const App = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={globalStyles.notification}>
-        <TouchableOpacity onPress={() => router.push('/components/notificationModal')}>
+        <TouchableOpacity 
+        onPress={() => {
+           if (!user?.isGuest && user?.firstName) {
+             router.push('/components/notificationModal');
+           }
+         }}
+         disabled={user?.isGuest || !user?.firstName}>
           <Image source={require('../../assets/images/notification.png')} />
         </TouchableOpacity>
       </View>

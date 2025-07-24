@@ -73,11 +73,6 @@ export default function App() {
       <PaperProvider>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.wrapper}>
-            <View style={styles.topVisitor}>
-              <TouchableOpacity onPress={() => router.replace('/(tabs)/home')}>
-                <Text style={styles.visitor}>Vazhdo si mysafir</Text>
-              </TouchableOpacity>
-            </View>
             <View style={styles.container}>
               <Text style={styles.welcome}>{t('index.title')}</Text>
               <View style={styles.logoContainer}>
