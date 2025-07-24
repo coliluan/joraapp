@@ -32,12 +32,14 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024, // 50MB
   },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
-      cb(null, true);
-    } else {
-      cb(new Error('Vetëm skedarë PDF lejohen.'));
-    }
-  },
+  const allowedTypes = ['application/pdf', 'application/octet-stream'];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Vetëm skedarë PDF lejohen.'));
+  }
+}
+
 });
 
 
