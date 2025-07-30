@@ -45,6 +45,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json()); 
 app.use(morgan('dev'));
+app.use('/uploads', express.static('uploads'));
 
 
 // Connect to MongoDB
@@ -90,6 +91,42 @@ const pdfSchema = new mongoose.Schema({
 
 const PdfModel = mongoose.model('pdfs', pdfSchema);
 
+const productStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/products/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
+});
+const productUpload = multer({ storage: productStorage });
+
+const productSchema = new mongoose.Schema({
+  title: String,
+  price: String,
+  imageUrl: String,
+});
+const ProductModel = mongoose.model('products', productSchema);
+
+app.post('/api/upload-product', productUpload.single('image'), async (req, res) => {
+  try {
+    const { title, price } = req.body;
+    const imageUrl = `/uploads/products/${req.file.filename}`;
+    const newProduct = new ProductModel({ title, price, imageUrl });
+    await newProduct.save();
+
+    res.status(200).json({ message: 'Produkti u ruajt', product: newProduct });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Gabim gjatë ruajtjes së produktit' });
+  }
+});
+
+app.get('/api/products', async (req, res) => {
+  const products = await ProductModel.find().sort({ createdAt: -1 });
+  res.json({ products });
+});
+
 app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
   try {
     const { customName, customSubtitle } = req.body;
@@ -114,8 +151,6 @@ app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
     return res.status(500).json({ message: 'Gabim gjatë ruajtjes së PDF.' });
   }
 });
-
-
 
 app.get('/api/pdf/:id', async (req, res) => {
   try {
@@ -157,7 +192,6 @@ app.delete('/api/pdf/:id', async (req, res) => {
     res.status(500).json({ message: 'Gabim në server' });
   }
 });
-
 
 app.post('/api/user/push-token', async (req, res) => {
   const { firstName, expoPushToken } = req.body;
@@ -257,8 +291,6 @@ app.post('/api/notify', async (req, res) => {
     return res.status(500).json({ message: 'Gabim gjatë dërgimit të notifikimeve.' });
   }
 });
-
-
 
 app.get('/api/notifications', async (req, res) => {
   try {
