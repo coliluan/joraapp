@@ -1,4 +1,3 @@
-
 import bcrypt from 'bcrypt';
 import bodyParser from 'body-parser';
 import { createCanvas } from 'canvas';
@@ -9,7 +8,6 @@ import JsBarcode from 'jsbarcode';
 import mongoose from 'mongoose';
 import morgan from 'morgan';
 import multer from 'multer';
-import path from 'path';
 import NotificationModel from '../backend/models/Notification.model.js';
 
 
@@ -27,52 +25,29 @@ const PORT = process.env.PORT || 8000;
 
 const MONGO_URL = process.env.MONGO_URL || 'mongodb://localhost:27017/dbconnect';
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/products');
+const storage = multer.memoryStorage();
+const upload = multer({
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB
   },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + Date.now() + ext);
+  fileFilter: (req, file, cb) => {
+  const allowedTypes = ['application/pdf', 'application/octet-stream'];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Vetëm skedarë PDF lejohen.'));
   }
+}
+
 });
 
-const upload = multer({ storage });
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json()); 
 app.use(morgan('dev'));
-app.use('/uploads', express.static('uploads'));
 
-
-import fs from 'fs';
-
-app.post('/api/upload-product', upload.single('image'), async (req, res) => {
-  const { title, price } = req.body;
-
-  if (!req.file) {
-    return res.status(400).json({ message: 'Image është e detyrueshme.' });
-  }
-
-  const uploadsDir = path.join('uploads', 'products');
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  }
-
-  const filename = `image-${Date.now()}.jpg`;
-  const filePath = path.join(uploadsDir, filename);
-
-  fs.writeFileSync(filePath, req.file.buffer);
-
-  const newProduct = {
-    title,
-    price,
-    image: `/uploads/products/${filename}`,
-  };
-
-  return res.status(200).json({ message: 'Produkti u ruajt', product: newProduct });
-});
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URL)
@@ -141,6 +116,9 @@ app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
     return res.status(500).json({ message: 'Gabim gjatë ruajtjes së PDF.' });
   }
 });
+
+
+
 
 app.get('/api/pdf/:id', async (req, res) => {
   try {
