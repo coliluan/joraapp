@@ -94,25 +94,22 @@ const PdfModel = mongoose.model('pdfs', pdfSchema);
 
 // Express route (example)
 app.post('/api/upload-product', upload.single('image'), async (req, res) => {
-  try {
-    const { title, price } = req.body;
-    const file = req.file;
-    if (!file) return res.status(400).json({ message: 'No file uploaded' });
+  const { title, price } = req.body;
+  const file = req.file;
 
-    const filepath = '/uploads/' + file.filename;
+  if (!file) return res.status(400).json({ message: 'No file uploaded' });
 
-    const product = await ProductModel.create({
-      title,
-      price,
-      image: filepath,
-    });
+  const filepath = '/uploads/' + file.filename;
 
-    res.status(201).json({ product });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server upload error' });
-  }
+  const product = await ProductModel.create({
+    title,
+    price,
+    image: filepath,
+  });
+
+  res.status(201).json({ product });
 });
+
 
 
 
