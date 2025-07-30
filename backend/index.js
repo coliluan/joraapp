@@ -31,9 +31,8 @@ const storage = multer.diskStorage({
     cb(null, 'uploads/products');
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext); // e.g. image-123456789.png
+    cb(null, file.fieldname + '-' + Date.now() + ext);
   }
 });
 
@@ -44,6 +43,25 @@ app.use(bodyParser.json());
 app.use(express.json()); 
 app.use(morgan('dev'));
 app.use('/uploads', express.static('uploads'));
+
+
+app.post('/api/upload-product', upload.single('image'), async (req, res) => {
+  const { title, price } = req.body;
+
+  if (!req.file) {
+    return res.status(400).json({ message: 'Image është e detyrueshme.' });
+  }
+
+  const newProduct = {
+    title,
+    price,
+    image: `/uploads/products/${req.file.filename}`, // ruaj path relativ për frontend
+  };
+
+  // ruaje në DB nëse ke koleksion për produkte, ose dërgo si përgjigje
+  return res.status(200).json({ message: 'Produkti u ruajt', product: newProduct });
+});
+
 
 
 
@@ -89,48 +107,6 @@ const pdfSchema = new mongoose.Schema({
 });
 
 const PdfModel = mongoose.model('pdfs', pdfSchema);
-
-const productStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/products/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
-});
-const productUpload = multer({ storage: productStorage });
-
-const productSchema = new mongoose.Schema({
-  title: String,
-  price: String,
-  imageUrl: String,
-});
-const ProductModel = mongoose.model('products', productSchema);
-
-app.get('/api/products', async (req, res) => {
-  const products = await ProductModel.find().sort({ createdAt: -1 });
-  res.json(products);
-});
-
-app.post('/api/upload-product', upload.single('image'), async (req, res) => {
-  try {
-    const { title, price } = req.body;
-    const imageUrl = `/uploads/products/${req.file.filename}`;
-
-    const product = new Product({
-      title,
-      price,
-      imageUrl,
-    });
-
-    await product.save();
-    res.json(product);
-  } catch (err) {
-    console.error('Upload Error:', err);
-    res.status(500).json({ error: 'Upload failed' });
-  }
-});
-
 
 app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
   try {
