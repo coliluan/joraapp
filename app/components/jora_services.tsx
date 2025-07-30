@@ -1,3 +1,4 @@
+import { t } from 'i18next';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -5,15 +6,9 @@ const Services = () => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.textContainer}>
-        <Text style={styles.title}>Shërbimet e Jora Center</Text>
+        <Text style={styles.title}>{t('titleServices')}</Text>
         <Text style={styles.content}>
-          Jora Center ofron një gamë të gjerë shërbimesh për të përmbushur nevojat e përditshme të vizitorëve:
-          {'\n\n'}• Supermarket modern me produkte të freskëta dhe cilësore.
-          {'\n'}• Restorant me kuzhinë të pasur vendore dhe ndërkombëtare.
-          {'\n'}• Kafene të rehatshme për relaks dhe shoqëri.
-          {'\n'}• Dyqane mode me koleksione bashkëkohore.
-          {'\n'}• Ambient i pastër dhe mikpritës për të gjithë vizitorët.
-          {'\n\n'}Qendra është projektuar për të qenë praktike, komode dhe gjithmonë në shërbim të klientëve.
+          {t('textServices')}
         </Text>
       </View>
     </ScrollView>

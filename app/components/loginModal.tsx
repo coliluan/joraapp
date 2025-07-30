@@ -37,32 +37,6 @@ const LoginModal = () => {
   };
 
   return (
-    // <Dialog visible={true} dismissable={false} style={globalStyles.modal}>
-    //   <Dialog.Title>Ju lutem identifikohuni</Dialog.Title>
-    //   <Dialog.Content>
-    //     <TextInput
-    //       placeholder="Emri"
-    //       value={formData.firstName}
-    //       onChangeText={(text) => setFormData({ ...formData, firstName: text })}
-    //       style={styles.input}
-    //     />
-    //     <View style={styles.input}>
-    //       <TextInput
-    //         placeholder="Fjalëkalimi"
-    //         value={formData.password}
-    //         secureTextEntry={!visiblePassword}
-    //         onChangeText={(text) => setFormData({ ...formData, password: text })}
-    //         style={styles.passwordInput}
-    //       />
-    //       <TouchableOpacity onPress={() => setVisiblePassword(!visiblePassword)}>
-    //         <Image source={require('../../assets/images/eyeIcon.png')} style={styles.eyeIcon} />
-    //       </TouchableOpacity>
-    //     </View>
-    //   </Dialog.Content>
-    //   <Dialog.Actions>
-    //     <Button onPress={handleLogin}>Login</Button>
-    //   </Dialog.Actions>
-    // </Dialog>
     <Dialog
             style={globalStyles.modal}
             visible={true}
@@ -70,7 +44,7 @@ const LoginModal = () => {
           >
             <Dialog.Icon icon="alert" />
             <Dialog.Title style={globalStyles.dialogTitle}>
-              Ju lutem identifikohuni
+              {t('authentication')}
             </Dialog.Title>
             <Dialog.Content>
               <View style={styles.custom}>
@@ -107,7 +81,7 @@ const LoginModal = () => {
                 mode="contained"
                 labelStyle={{ color: '#EB2328' }}
               >
-                Register
+                {t('register')}
               </Button>
               <Button
                 style={globalStyles.buttonDialog}
@@ -115,7 +89,7 @@ const LoginModal = () => {
                 labelStyle={{ color: '#fff' }}
                 onPress={handleLogin}
               >
-                Login
+                {t('logIn')}
               </Button>
             </Dialog.Actions>
           </Dialog>
@@ -125,17 +99,6 @@ const LoginModal = () => {
 export default LoginModal;
 
 const styles = StyleSheet.create({
-  // modal: { padding: 20 },
-  // input: {
-  //   backgroundColor: '#fff',
-  //   marginBottom: 15,
-  //   paddingHorizontal: 15,
-  //   borderRadius: 5,
-  //   height: 40,
-  // },
-  
-  // passwordInput: { flex: 1 },
-  // eyeIcon: { width: 20, height: 20, tintColor: '#999' },
   passwordInput: {
       flex: 1,
       fontSize: 18,

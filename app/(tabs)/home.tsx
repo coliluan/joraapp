@@ -106,27 +106,36 @@ const HomeScreen = () => {
         numColumns={2}
         refreshing={refreshing}
         onRefresh={onRefresh}
+        columnWrapperStyle={{ justifyContent: 'space-between' }}
+
         contentContainerStyle={styles.scrollContainer}
         ListHeaderComponent={
           <>
             <View style={globalStyles.notification}>
-              <TouchableOpacity
-                onPress={() => {
-                  if (!user?.isGuest && user?.firstName) {
-                    router.push('/components/notificationModal');
-                  }
-                }}
-                disabled={user?.isGuest || !user?.firstName}
-              >
-                <Image source={require('../../assets/images/notification.png')} />
-              </TouchableOpacity>
-              {notificationCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{notificationCount}</Text>
-                </View>
-              )}
-            </View>
+                {user?.firstName ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      router.push('/components/notificationModal');
+                    }}
+                  >
+                    <Image source={require('../../assets/images/notification.png')} />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => {
+                      router.push('../(auth)/logIn');
+                    }}
+                  >
+                    <Image style={styles.logo} source={require('../../assets/images/logs.png')} />
+                  </TouchableOpacity>
+                )}
 
+                {notificationCount > 0 && user?.firstName && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{notificationCount}</Text>
+                  </View>
+                )}
+              </View>
             <View style={styles.header}>
               <Text style={globalStyles.title}>
                 {t('home.title')}{' '}
@@ -159,9 +168,17 @@ const HomeScreen = () => {
                     />
                   </TouchableOpacity>
                 </View>
+                <View style={globalStyles.guestsImageWrapper}>
+                  <TouchableOpacity onPress={() => router.push('/components/privacy')}>
+                    <Image
+                      source={require('../../assets/images/location1.png')}
+                      style={globalStyles.guestsImage}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                </View>
               </>
             )}
-
             <Text style={styles.sectionTitle}>{t('home.sectionTitle')}</Text>
           </>
         }
@@ -244,17 +261,11 @@ const styles = StyleSheet.create({
     color: '#171717',
     marginBottom: 15,
   },
-  card: {
-    flex: 1,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
   cardImage: {
-    width: '50%',
+    width: '47%',
     paddingBottom: 30,
   },
   pdfContainer: {
-    paddingHorizontal: 17.5,
     height: 217,
     width: '100%',
   },
@@ -264,10 +275,8 @@ const styles = StyleSheet.create({
     color: '#171717',
     textAlign: 'left',
     fontFamily: 'Poppins',
-    paddingHorizontal: 17.5,
   },
   pdfSubtitle: {
-    paddingHorizontal: 17.5,
     fontSize: 10,
     fontWeight: '400',
     color: '#EB2328',
@@ -299,6 +308,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
+  },
+  logo: {
+    width: 40,
+    paddingTop: 10,
+    height: 40,
   },
 });
 

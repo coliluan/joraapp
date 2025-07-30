@@ -13,14 +13,6 @@ export default function RootLayout() {
         headerShown: false,
         gestureEnabled: false,
         }} name="index" />
-        <Stack.Screen
-        name="DashboardScreen"
-        options={{
-          title: 'Dashboard',
-          headerShown: true,
-          headerTitleAlign: 'center',
-        }}
-      />
       <Stack.Screen options={{ 
         headerShown: false,
         gestureEnabled: false,
@@ -33,7 +25,7 @@ export default function RootLayout() {
           headerTintColor: '#171717',
           headerTitleStyle: { fontWeight: '500' },
           gestureEnabled: true,
-          headerBackVisible: true,
+          headerBackVisible: false,
           headerBackTitle: '',
         }}
         name="(auth)/logIn"
@@ -46,7 +38,7 @@ export default function RootLayout() {
           headerTintColor: '#171717',
           headerTitleStyle: { fontWeight: '500' },
           gestureEnabled: true,
-          headerBackVisible: true,
+          headerBackVisible: false,
           headerBackTitle: '',
         }}
         name="(auth)/registired"
@@ -105,7 +97,7 @@ export default function RootLayout() {
       />
       <Stack.Screen
         options={{
-          title: 'Historiku',
+          title: t('history'),
           headerShown: true,
           headerTitleAlign: 'center',
           headerTintColor: '#171717',
@@ -118,7 +110,7 @@ export default function RootLayout() {
       />
       <Stack.Screen
         options={{
-          title: 'Shërbimet',
+          title: t('services'),
           headerShown: true,
           headerTitleAlign: 'center',
           headerTintColor: '#171717',
@@ -129,6 +121,33 @@ export default function RootLayout() {
         }}
         name="components/jora_services"
       />
+      <Stack.Screen
+        options={{
+          title: '',
+          headerShown: true,
+          headerTitleAlign: 'center',
+          headerTintColor: '#171717',
+          headerTitleStyle: { fontWeight: '500' },
+          gestureEnabled: true,
+          headerBackVisible: false,
+          headerBackTitle: '',
+        }}
+        name="(auth)/profile/cities"
+      />
+      <Stack.Screen
+        options={{
+          title: t('terms'),
+          headerShown: true,
+          headerTitleAlign: 'center',
+          headerTintColor: '#171717',
+          headerTitleStyle: { fontWeight: '500' },
+          gestureEnabled: true,
+          headerBackVisible: false,
+          headerBackTitle: '',
+        }}
+        name="components/privacy"
+      />
+
     </Stack>
     </LanguageProvider>
     

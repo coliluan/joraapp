@@ -39,10 +39,7 @@ const upload = multer({
     cb(new Error('Vetëm skedarë PDF lejohen.'));
   }
 }
-
 });
-
-
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());

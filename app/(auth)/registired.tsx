@@ -26,7 +26,6 @@ const RegisterScreen = () => {
   const { selectedCity } = useLocalSearchParams<{ selectedCity?: string }>();
   const phoneInput = useRef<PhoneInput>(null);
   const [value, setValue] = useState('');
-  // const [valid, setValid] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -70,7 +69,6 @@ const RegisterScreen = () => {
     if (password !== confirmPassword) {
       return 'Fjalëkalimet nuk përputhen';
     }
-    // Password: min 6 karaktere (testim)
     if (password.length < 6) {
       return 'Fjalëkalimi duhet të ketë të paktën 6 karaktere.';
     }
@@ -182,11 +180,10 @@ const RegisterScreen = () => {
           onChangeText={setValue}
          onChangeFormattedText={(formattedText) => {
           const checkValid = phoneInput.current?.isValidNumber(formattedText);
-          // setValid(checkValid ?? false);
           setValue(formattedText); 
                   
           if (checkValid) {
-            handleInputChange('number', formattedText); // <-- kjo është e saktë
+            handleInputChange('number', formattedText); 
           } else {
             handleInputChange('number', '');
           }

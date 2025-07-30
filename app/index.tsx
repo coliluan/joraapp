@@ -18,7 +18,6 @@ export default function App() {
   const [checkingLogin, setCheckingLogin] = useState(true);
   const opacity = useSharedValue(1);
 
-  // Animacioni i onboarding
   useEffect(() => {
     const startOnboarding = async () => {
       setTimeout(() => {
@@ -33,17 +32,16 @@ export default function App() {
     startOnboarding();
   }, []);
 
-  // Kontrollo login-in pasi përfundon onboarding
   const checkLoginStatus = async () => {
     try {
       const user = await AsyncStorage.getItem('loggedInUser');
       if (user) {
-        router.replace('/(tabs)/home'); // shko direkt në home
+        router.replace('/(tabs)/home');
       } else {
-        setShowMain(true); // shfaq butonat login/register
+        setShowMain(true); 
       }
     } catch (e) {
-      setShowMain(true); // në rast errori, vazhdo në onboarding screen
+      setShowMain(true); 
     } finally {
       setCheckingLogin(false);
     }
@@ -80,7 +78,6 @@ export default function App() {
                   
                 />
               </View>
-              {/* <Text style={styles.subtitle}>{t('index.text')}</Text> */}
             </View>
             <View style={styles.buttonContainer}>
               <Button
@@ -103,7 +100,7 @@ export default function App() {
 
             <View style={styles.customVisitor}>
               <TouchableOpacity onPress={() => router.replace('/(tabs)/home')}>
-                <Text style={styles.visitor}>Vazhdo si mysafir</Text>
+                <Text style={styles.visitor}>{t('index.guests')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -166,38 +163,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
+    width: '100%',
+    maxWidth: 250
   },
   image: {
     width: '100%', 
-  },
-  subtitle: {
-    textAlign: 'center',
-    fontSize: 18,
-    color: '#171717',
-    marginBottom: 40,
-    fontWeight: '500',
-    paddingHorizontal: 61,
+    objectFit: 'contain'
   },
   buttonContainer: {
     width: '100%',
     alignItems: 'center',
     gap: 20,
   },
-  // logButton: {
-  //   borderColor: '#D32F2F',
-  //   width: 180,
-  //   height: 60,
-  //   alignItems: 'center',
-  //   justifyContent: 'center',
-  //   borderRadius: 0,
-  // },
   buttons:{
     backgroundColor:'#FFFFFF',
     width: 180,
     height: 60,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 0,
+    borderRadius: 10,
+    
   },
   buttonText: {
     fontSize: 20,
