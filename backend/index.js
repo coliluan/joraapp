@@ -9,6 +9,7 @@ import JsBarcode from 'jsbarcode';
 import mongoose from 'mongoose';
 import morgan from 'morgan';
 import multer from 'multer';
+import path from 'path';
 import NotificationModel from '../backend/models/Notification.model.js';
 
 
@@ -45,6 +46,8 @@ app.use(morgan('dev'));
 app.use('/uploads', express.static('uploads'));
 
 
+import fs from 'fs';
+
 app.post('/api/upload-product', upload.single('image'), async (req, res) => {
   const { title, price } = req.body;
 
@@ -52,18 +55,24 @@ app.post('/api/upload-product', upload.single('image'), async (req, res) => {
     return res.status(400).json({ message: 'Image është e detyrueshme.' });
   }
 
+  const uploadsDir = path.join('uploads', 'products');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  const filename = `image-${Date.now()}.jpg`;
+  const filePath = path.join(uploadsDir, filename);
+
+  fs.writeFileSync(filePath, req.file.buffer);
+
   const newProduct = {
     title,
     price,
-    image: `/uploads/products/${req.file.filename}`, // ruaj path relativ për frontend
+    image: `/uploads/products/${filename}`,
   };
 
-  // ruaje në DB nëse ke koleksion për produkte, ose dërgo si përgjigje
   return res.status(200).json({ message: 'Produkti u ruajt', product: newProduct });
 });
-
-
-
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URL)
