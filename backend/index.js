@@ -3,51 +3,42 @@ import bodyParser from 'body-parser';
 import { createCanvas } from 'canvas';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { Expo } from 'expo-server-sdk';
 import express from 'express';
 import JsBarcode from 'jsbarcode';
 import mongoose from 'mongoose';
 import morgan from 'morgan';
 import multer from 'multer';
-import NotificationModel from '../backend/models/Notification.model.js';
-
-
-import { Expo } from 'expo-server-sdk';
 import fetch from 'node-fetch';
-
-// Global Buffer për MongoDB
+import NotificationModel from '../backend/models/Notification.model.js';
 global.Buffer = global.Buffer || require('buffer').Buffer;
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 8000;
-// const MONGO_URL = process.env.MONGO_URL || 'mongodb+srv://coliluan1:Luan12345@joracenterapp.nwiqgem.mongodb.net/';
-
 const MONGO_URL = process.env.MONGO_URL || 'mongodb://localhost:27017/dbconnect';
 
 const storage = multer.memoryStorage();
 const upload = multer({
+  storage,
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB
   },
   fileFilter: (req, file, cb) => {
-  const allowedTypes = ['application/pdf', 'application/octet-stream','image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Vetëm skedarë PDF lejohen.'));
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Vetëm skedarë image lejohen.'));
+    }
   }
-}
-
 });
 
-
-// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json()); 
 app.use(morgan('dev'));
-
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URL)
@@ -92,25 +83,106 @@ const pdfSchema = new mongoose.Schema({
 
 const PdfModel = mongoose.model('pdfs', pdfSchema);
 
+const productSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  price: { type: String, required: true },
+  image: { type: Buffer, required: true },
+  imageType: { type: String }, // for sending back as base64
+}, { timestamps: true });
+
+const ProductModel = mongoose.model('products', productSchema);
+
+
 // Express route (example)
 app.post('/api/upload-product', upload.single('image'), async (req, res) => {
-  const { title, price } = req.body;
-  const file = req.file;
+  try {
+    const { title, price } = req.body;
+    const file = req.file;
 
-  if (!file) return res.status(400).json({ message: 'No file uploaded' });
+    if (!file) return res.status(400).json({ message: 'Asnjë imazh nuk u ngarkua.' });
 
-  const filepath = '/uploads/' + file.filename;
+    const product = await ProductModel.create({
+      title,
+      price,
+      image: file.buffer,
+      imageType: file.mimetype,
+    });
 
-  const product = await ProductModel.create({
-    title,
-    price,
-    image: filepath,
-  });
-
-  res.status(201).json({ product });
+    res.status(201).json({
+      product: {
+        _id: product._id,
+        title: product.title,
+        price: product.price,
+        image: `/api/product-image/${product._id}`
+      }
+    });
+  } catch (err) {
+    console.error('❌ Error uploading product:', err);
+    res.status(500).json({ message: 'Gabim në server.' });
+  }
 });
 
+// ✅ ROUTE: Get all products
+app.get('/api/products', async (req, res) => {
+  try {
+    const products = await ProductModel.find().sort({ createdAt: -1 });
+    const formatted = products.map(p => ({
+      _id: p._id,
+      title: p.title,
+      price: p.price,
+      image: `/api/product-image/${p._id}`
+    }));
+    res.json({ products: formatted });
+  } catch (err) {
+    console.error('❌ Error getting products:', err);
+    res.status(500).json({ message: 'Gabim në server.' });
+  }
+});
 
+// ✅ ROUTE: Serve image
+app.get('/api/product-image/:id', async (req, res) => {
+  try {
+    const product = await ProductModel.findById(req.params.id);
+    if (!product || !product.image) return res.status(404).send('Imazhi nuk u gjet.');
+
+    res.set('Content-Type', product.imageType);
+    res.send(product.image);
+  } catch (err) {
+    res.status(500).send('Gabim gjatë shfaqjes së imazhit.');
+  }
+});
+
+app.delete('/api/products/:id', async (req, res) => {
+  try {
+    const deleted = await ProductModel.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'Produkti nuk u gjet.' });
+    res.json({ message: 'Produkti u fshi me sukses.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Gabim gjatë fshirjes së produktit.' });
+  }
+});
+
+// ✅ PUT: Përditëso produkt (pa image)
+app.put('/api/products/:id', async (req, res) => {
+  try {
+    const { title, price } = req.body;
+    const updated = await ProductModel.findByIdAndUpdate(
+      req.params.id,
+      { title, price },
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ message: 'Produkti nuk u gjet.' });
+
+    res.json({
+      _id: updated._id,
+      title: updated.title,
+      price: updated.price,
+      image: `/api/product-image/${updated._id}`
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Gabim gjatë përditësimit të produktit.' });
+  }
+});
 
 
 
