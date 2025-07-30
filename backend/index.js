@@ -101,7 +101,7 @@ app.get('/api/products', async (req, res) => {
   res.json(products);
 });
 
-app.post('/api/upload-product', upload.single('image'), async (req, res) => {
+app.post('/api/upload-product', productUpload.single('image'), async (req, res) => {
   const { title, price } = req.body;
   const imageUrl = `/uploads/${req.file.filename}`;
   const product = await ProductModel.create({ title, price, imageUrl });
