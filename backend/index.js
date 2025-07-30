@@ -96,24 +96,19 @@ const productSchema = new mongoose.Schema({
 });
 const ProductModel = mongoose.model('products', productSchema);
 
-app.post('/api/upload-product', upload.single('image'), async (req, res) => {
-  try {
-    const { title, price } = req.body;
-    const imageUrl = `/uploads/${req.file.filename}`;
-
-    const product = await ProductModel.create({ title, price, image: imageUrl });
-
-    res.status(201).json({ product });
-  } catch (error) {
-    console.error('Upload Error:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
-  }
-});
-
 app.get('/api/products', async (req, res) => {
   const products = await ProductModel.find().sort({ createdAt: -1 });
-  res.json({ products });
+  res.json(products);
 });
+
+app.post('/api/upload-product', upload.single('image'), async (req, res) => {
+  const { title, price } = req.body;
+  const imageUrl = `/uploads/${req.file.filename}`;
+  const product = await ProductModel.create({ title, price, image: imageUrl });
+  res.status(201).json(product); // pa {} rreth
+});
+
+
 
 app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
   try {
