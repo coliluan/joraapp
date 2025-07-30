@@ -104,8 +104,8 @@ app.get('/api/products', async (req, res) => {
 app.post('/api/upload-product', upload.single('image'), async (req, res) => {
   const { title, price } = req.body;
   const imageUrl = `/uploads/${req.file.filename}`;
-  const product = await ProductModel.create({ title, price, image: imageUrl });
-  res.status(201).json(product); // pa {} rreth
+  const product = await ProductModel.create({ title, price, imageUrl });
+  res.status(201).json(product);
 });
 
 
