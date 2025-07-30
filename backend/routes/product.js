@@ -18,22 +18,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// POST - shto produkt
-router.post('/upload-product', upload.single('image'), async (req, res) => {
-  try {
-    const { title, price } = req.body;
-    const imagePath = `/uploads/${req.file.filename}`;
-
-    const newProduct = new Product({ title, price, image: imagePath });
-    await newProduct.save();
-
-    res.status(201).json(newProduct);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Nuk u ruajt produkti' });
-  }
-});
-
 // GET - merr të gjitha produktet
 router.get('/products', async (req, res) => {
   try {
