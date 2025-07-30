@@ -92,6 +92,24 @@ const pdfSchema = new mongoose.Schema({
 
 const PdfModel = mongoose.model('pdfs', pdfSchema);
 
+
+// Express route (example)
+app.post('/api/upload-product', upload.single('image'), async (req, res) => {
+  const { title, price } = req.body;
+
+  const imagePath = `/uploads/${req.file.filename}`;
+
+  const newProduct = await ProductModel.create({
+    title,
+    price,
+    image: imagePath,
+  });
+
+  res.status(200).json({ message: 'Product uploaded successfully', product: newProduct });
+});
+
+
+
 app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
   try {
     const { customName, customSubtitle } = req.body;
@@ -116,8 +134,6 @@ app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
     return res.status(500).json({ message: 'Gabim gjatë ruajtjes së PDF.' });
   }
 });
-
-
 
 
 app.get('/api/pdf/:id', async (req, res) => {
