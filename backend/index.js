@@ -36,6 +36,7 @@ app.use(morgan('dev'));
 app.use('/uploads', express.static('uploads'));
 
 
+
 // Connect to MongoDB
 mongoose.connect(MONGO_URL)
   .then(() => {
@@ -103,11 +104,11 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/upload-product', upload.single('image'), async (req, res) => {
   const { title, price } = req.body;
-  const imageUrl = `/uploads/${req.file.filename}`;
+  const imageUrl = `/uploads/products/${req.file.filename}`;
+  console.log(`Image uploaded: ${imageUrl}`);  // Debugging the uploaded image path
   const product = await ProductModel.create({ title, price, imageUrl });
   res.status(201).json(product);
 });
-
 
 
 app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
