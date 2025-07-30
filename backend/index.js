@@ -27,19 +27,7 @@ const PORT = process.env.PORT || 8000;
 const MONGO_URL = process.env.MONGO_URL || 'mongodb://localhost:27017/dbconnect';
 
 const storage = multer.memoryStorage();
-const upload = multer({
-  limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB
-  },
-  fileFilter: (req, file, cb) => {
-  const allowedTypes = ['application/pdf', 'application/octet-stream'];
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Vetëm skedarë PDF lejohen.'));
-  }
-}
-});
+const upload = multer({ storage });
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
@@ -108,17 +96,17 @@ const productSchema = new mongoose.Schema({
 });
 const ProductModel = mongoose.model('products', productSchema);
 
-app.post('/api/upload-product', productUpload.single('image'), async (req, res) => {
+app.post('/api/upload-product', upload.single('image'), async (req, res) => {
   try {
     const { title, price } = req.body;
-    const imageUrl = `/uploads/products/${req.file.filename}`;
-    const newProduct = new ProductModel({ title, price, imageUrl });
-    await newProduct.save();
+    const imageUrl = `/uploads/${req.file.filename}`;
 
-    res.status(200).json({ message: 'Produkti u ruajt', product: newProduct });
+    const product = await ProductModel.create({ title, price, image: imageUrl });
+
+    res.status(201).json({ product });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Gabim gjatë ruajtjes së produktit' });
+    console.error('Upload Error:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 });
 
