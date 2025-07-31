@@ -185,11 +185,13 @@ app.put('/api/products/:id', upload.single('image'), async (req, res) => {
     if (!updated) return res.status(404).json({ message: 'Produkti nuk u gjet.' });
 
     res.json({
-      _id: updated._id,
-      title: updated.title,
-      price: updated.price,
-      image: `/api/product-image/${updated._id}`  // Ensure this points to the correct image
-    });
+  product: {
+    _id: updated._id,
+    title: updated.title,
+    price: updated.price,
+    image: `/api/product-image/${updated._id}`
+  }
+});
   } catch (err) {
     res.status(500).json({ message: 'Gabim gjatë përditësimit të produktit.' });
   }
