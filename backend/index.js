@@ -86,6 +86,7 @@ const PdfModel = mongoose.model('pdfs', pdfSchema);
 const productSchema = new mongoose.Schema({
   title: { type: String, required: true },
   price: { type: String, required: true },
+  category: { type: String, required: true },
   image: { type: Buffer, required: true },
   imageType: { type: String }, // for sending back as base64
 }, { timestamps: true });
@@ -96,7 +97,7 @@ const ProductModel = mongoose.model('products', productSchema);
 // Express route (example)
 app.post('/api/upload-product', upload.single('image'), async (req, res) => {
   try {
-    const { title, price } = req.body;
+    const { title, price, category } = req.body;
     const file = req.file;
 
     if (!file) return res.status(400).json({ message: 'Asnjë imazh nuk u ngarkua.' });
@@ -104,6 +105,7 @@ app.post('/api/upload-product', upload.single('image'), async (req, res) => {
     const product = await ProductModel.create({
       title,
       price,
+      category,
       image: file.buffer,
       imageType: file.mimetype,
     });
@@ -113,6 +115,7 @@ app.post('/api/upload-product', upload.single('image'), async (req, res) => {
         _id: product._id,
         title: product.title,
         price: product.price,
+        category: product.category,
         image: `/api/product-image/${product._id}`
       }
     });
@@ -130,6 +133,7 @@ app.get('/api/products', async (req, res) => {
       _id: p._id,
       title: p.title,
       price: p.price,
+      category: p.category,
       image: `/api/product-image/${p._id}`
     }));
     res.json({ products: formatted });
@@ -166,10 +170,10 @@ app.delete('/api/products/:id', async (req, res) => {
 // ✅ PUT: Përditëso produkt (pa image)
 app.put('/api/products/:id', upload.single('image'), async (req, res) => {
   try {
-    const { title, price } = req.body;
+    const { title, price, category } = req.body;
     const image = req.file ? req.file.buffer : null;  // Check if a new image is uploaded
 
-    const updateFields = { title, price };
+    const updateFields = { title, price, category };
 
     if (image) {
       updateFields.image = image;
@@ -189,6 +193,7 @@ app.put('/api/products/:id', upload.single('image'), async (req, res) => {
     _id: updated._id,
     title: updated.title,
     price: updated.price,
+    category: updated.category,
     image: `/api/product-image/${updated._id}`
   }
 });
