@@ -170,10 +170,10 @@ app.delete('/api/products/:id', async (req, res) => {
 // ✅ PUT: Përditëso produkt (pa image)
 app.put('/api/products/:id', upload.single('image'), async (req, res) => {
   try {
-    const { title, price, category } = req.body;
+    const { title, price } = req.body;
     const image = req.file ? req.file.buffer : null;  // Check if a new image is uploaded
 
-    const updateFields = { title, price, category };
+    const updateFields = { title, price, category  };
 
     if (image) {
       updateFields.image = image;
@@ -193,7 +193,6 @@ app.put('/api/products/:id', upload.single('image'), async (req, res) => {
     _id: updated._id,
     title: updated.title,
     price: updated.price,
-    category: updated.category,
     image: `/api/product-image/${updated._id}`
   }
 });
