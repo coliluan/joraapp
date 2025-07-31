@@ -163,26 +163,38 @@ app.delete('/api/products/:id', async (req, res) => {
 });
 
 // ✅ PUT: Përditëso produkt (pa image)
-app.put('/api/products/:id', async (req, res) => {
+// ✅ PUT: Përditëso produkt (pa image)
+app.put('/api/products/:id', upload.single('image'), async (req, res) => {
   try {
     const { title, price } = req.body;
+    const image = req.file ? req.file.buffer : null;  // Check if a new image is uploaded
+
+    const updateFields = { title, price };
+
+    if (image) {
+      updateFields.image = image;
+      updateFields.imageType = req.file.mimetype;  // Store the image type for future response
+    }
+
     const updated = await ProductModel.findByIdAndUpdate(
       req.params.id,
-      { title, price },
+      updateFields,
       { new: true }
     );
+
     if (!updated) return res.status(404).json({ message: 'Produkti nuk u gjet.' });
 
     res.json({
       _id: updated._id,
       title: updated.title,
       price: updated.price,
-      image: `/api/product-image/${updated._id}`
+      image: `/api/product-image/${updated._id}`  // Ensure this points to the correct image
     });
   } catch (err) {
     res.status(500).json({ message: 'Gabim gjatë përditësimit të produktit.' });
   }
 });
+
 
 
 
