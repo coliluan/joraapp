@@ -105,6 +105,27 @@ const Layout = () => {
           ),
         }}
       />
+      <Tabs.Screen
+        name="shop"
+        options={{
+          title: 'E-Shop',
+          headerShown: false,
+          tabBarIcon: ({ focused }) => (
+            <Image
+              source={
+                focused
+                  ? require('../../assets/images/shopping.png')
+                  : require('../../assets/images/shopping.png')
+              }
+              style={{
+                width: 24,
+                height: 24,
+              }}
+              resizeMode="contain"
+            />
+          ),
+        }}
+      />
       <Tabs.Screen name="profile/edit_screen" options={{ href: null }} />
       <Tabs.Screen name="profile/cities" 
       options={{ 

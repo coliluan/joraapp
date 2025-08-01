@@ -31,4 +31,5 @@ export const ENDPOINTS = {
   BARCODE: (barcode: string) => `/api/barcode/${barcode}`,
   PDF: (id: string) => `/api/pdf/${id}`,
   USER: (firstName: string) => `/api/user/${firstName}`,
+  PRODUCTS: '/api/products',
 }; 
