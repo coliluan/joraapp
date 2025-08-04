@@ -1,7 +1,15 @@
 import { globalStyles } from '@/assets/globalStyles';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Card, Text } from 'react-native-paper';
 import { ENDPOINTS, getApiUrl } from '../../config/api';
 import LoginModal from '../components/loginModal';
@@ -10,85 +18,49 @@ import { useUserStore } from '../store/useUserStore';
 
 const Shop = () => {
   const [products, setProducts] = useState<any[]>([]);
-  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Te gjitha');
-  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
   const { user, isLoggedIn, loadUserFromStorage } = useUserStore();
+  const [quantities, setQuantities] = useState<{ [productId: string]: number }>({});
 
+  // Load user
   useEffect(() => {
-      loadUserFromStorage();
+    loadUserFromStorage();
   }, []);
 
+  // Fetch products
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const response = await fetch(getApiUrl(ENDPOINTS.PRODUCTS));
         const data = await response.json();
-        const updatedProducts = data.products.map((product: any) => ({
-          ...product,
-          quantity: product.quantity || 1, // Ensure quantity is set (1 if undefined)
-          category: product.category || 'Te gjitha', // Add a default category if missing
-        }));
-        setProducts(updatedProducts);
-        setFilteredProducts(updatedProducts);
-      } catch (error) {
-        console.error('Error fetching products:', error);
+        if (Array.isArray(data.products)) {
+          setProducts(data.products);
+          setFilteredProducts(data.products);
+        } else {
+          console.warn('Expected products to be array but got:', data);
+        }
+      } catch (err) {
+        console.error('Error fetching products:', err);
       }
     };
 
     fetchProducts();
   }, []);
 
-  const handleProductClick = (product: any) => {
-    setSelectedProduct(product);
-    setModalVisible(true); // Show the modal with the selected product
-  };
-
-  const closeModal = () => {
-    setModalVisible(false); // Close the modal
-  };
-
-  const handleQuantityChange = (productId: string, operation: 'increment' | 'decrement') => {
-    setProducts((prevProducts) => {
-      const updatedProducts = prevProducts.map((product) => {
-        if (product._id === productId) {
-          let newQuantity = product.quantity;
-
-          // Increment or decrement the quantity based on the operation
-          if (operation === 'increment') {
-            newQuantity = product.quantity + 1;
-          } else if (operation === 'decrement') {
-            newQuantity = Math.max(1, product.quantity - 1); // Prevent quantity from going below 1
-          }
-
-          return { ...product, quantity: newQuantity };
-        }
-        return product;
-      });
-
-      return updatedProducts;
-    });
-  };
-
-  const handleAddToCart = (product: any) => {
-    alert(`Added ${product.quantity} of ${product.title} to the cart.`);
-  };
-
-  // Handle search
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     filterProducts(query, selectedCategory);
   };
 
-  // Handle category click
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category);
     filterProducts(searchQuery, category);
   };
 
-  // Filter products based on search query and category
   const filterProducts = (query: string, category: string) => {
     let filtered = products;
 
@@ -107,106 +79,149 @@ const Shop = () => {
     setFilteredProducts(filtered);
   };
 
+  const handleProductClick = (product: any) => {
+    setSelectedProduct(product);
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+  };
+
+  const changeQuantity = (productId: string, type: 'increase' | 'decrease') => {
+  setQuantities(prev => {
+    const current = prev[productId] || 1;
+    const newQuantity = type === 'increase' ? current + 1 : Math.max(1, current - 1);
+    return {
+      ...prev,
+      [productId]: newQuantity,
+    };
+  });
+};
+
+
+  if (user?.isGuest || !isLoggedIn) {
+    return <LoginModal />;
+  }
+
   return (
     <SafeAreaView>
-      {isLoggedIn ? (
-        <ScrollView style={styles.container}>
-          <View style={globalStyles.notification}>
+      <ScrollView style={styles.container}>
+        {/* Notification icon */}
+        <View style={globalStyles.notification}>
+          <TouchableOpacity
+            onPress={() => {
+              if (!user?.isGuest && user?.firstName) {
+                router.push('/components/notificationModal');
+              }
+            }}
+            disabled={user?.isGuest || !user?.firstName}
+          >
+            <Image source={require('../../assets/images/notification.png')} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Search */}
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Kërko produkte..."
+          value={searchQuery}
+          onChangeText={handleSearch}
+        />
+
+        {/* Sort/Filter */}
+        <View style={styles.sortFilterContainer}>
+          <TouchableOpacity style={styles.button}>
+            <Text>Sort</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button}>
+            <Text>Filter</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Categories */}
+        <View style={styles.categoryContainer}>
+          {['Te gjitha', 'Ushqimore', 'Vendore', 'Higjenike'].map(category => (
             <TouchableOpacity
-              onPress={() => {
-                if (!user?.isGuest && user?.firstName) {
-                  router.push('/components/notificationModal');
-                }
-              }}
-              disabled={user?.isGuest || !user?.firstName}>
-              <Image source={require('../../assets/images/notification.png')} />
+              key={category}
+              style={[
+                styles.categoryButton,
+                selectedCategory === category && styles.selectedCategory,
+              ]}
+              onPress={() => handleCategoryClick(category)}
+            >
+              <Text style={styles.categoryText}>{category}</Text>
             </TouchableOpacity>
-          </View>
+          ))}
+        </View>
 
-          {/* Search Input */}
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search products..."
-            value={searchQuery}
-            onChangeText={handleSearch}
-          />
-
-          {/* Sort and Filter Buttons */}
-          <View style={styles.sortFilterContainer}>
-            <TouchableOpacity style={styles.button}>
-              <Text>Sort</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.button}>
-              <Text>Filter</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Category Buttons */}
-          <View style={styles.categoryContainer}>
-            {['Te gjitha', 'Ushqimore', 'Vendore', 'Higjenike'].map((category) => (
+        {/* Product cards */}
+        <View style={styles.cardContainer}>
+          {Array.isArray(filteredProducts) && filteredProducts.length > 0 ? (
+            filteredProducts.map(product => (
               <TouchableOpacity
-                key={category}
-                style={[
-                  styles.categoryButton,
-                  selectedCategory === category && styles.selectedCategory,
-                ]}
-                onPress={() => handleCategoryClick(category)}
+                key={product._id}
+                style={styles.card}
+                onPress={() => handleProductClick(product)}
               >
-                <Text style={styles.categoryText}>{category}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Product Cards */}
-          <View style={styles.cardContainer}>
-            {filteredProducts.map((product) => (
-              <TouchableOpacity style={styles.card} key={product._id} onPress={() => handleProductClick(product)}>
                 <Card>
-                  <Card.Cover style={styles.productImage} source={{ uri: getApiUrl(product.image) }} />
+                  <Card.Cover
+                    style={styles.productImage}
+                    source={{ uri: getApiUrl(product.image) }}
+                  />
                   <Card.Content>
-                    <Text style={styles.title} variant="titleLarge">{product.title}</Text>
-                    <Text style={styles.price} variant="bodyMedium">{product.price}€</Text>
+                    <Text style={styles.title}>{product.title}</Text>
+                    <Text style={styles.price}>{product.price}€</Text>
                   </Card.Content>
                   <Card.Actions style={styles.quantityContainer}>
                     <View style={styles.quantityButtons}>
                       <View style={styles.leftSection}>
                         <TouchableOpacity
                           style={styles.counter}
-                          onPress={() => handleQuantityChange(product._id, 'decrement')}
+                          onPress={() => changeQuantity(product._id, 'decrease')}
                         >
                           <Text>-</Text>
                         </TouchableOpacity>
-                        <Text style={styles.quantity}>{product.quantity}</Text>
+                        <Text style={styles.quantity}>{quantities[product._id] || 1}</Text>
                         <TouchableOpacity
                           style={styles.counter}
-                          onPress={() => handleQuantityChange(product._id, 'increment')}
+                          onPress={() => changeQuantity(product._id, 'increase')}
                         >
                           <Text>+</Text>
                         </TouchableOpacity>
                       </View>
                       <View style={styles.rightSection}>
                         <TouchableOpacity style={styles.buttonFavorite}>
-                          <Image style={styles.favorite} source={require('../../assets/images/favorite.png')} />
+                          <Image
+                            style={styles.favorite}
+                            source={require('../../assets/images/favorite.png')}
+                          />
                         </TouchableOpacity>
                       </View>
                     </View>
                     <View style={styles.cartButton}>
-                      <TouchableOpacity style={styles.buttonCart} onPress={() => handleAddToCart(product)}>
-                        <Text>Add to Cart</Text>
+                      <TouchableOpacity style={styles.buttonCart}>
+                        <Text style={{ color: 'white' }}>Shto në Shportë</Text>
                       </TouchableOpacity>
                     </View>
                   </Card.Actions>
                 </Card>
               </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
-      ) : (
-        <LoginModal />
-      )}
+            ))
+          ) : (
+            <Text style={{ textAlign: 'center', marginTop: 20 }}>
+              Nuk ka produkte.
+            </Text>
+          )}
+        </View>
+      </ScrollView>
 
       {selectedProduct && (
-        <ProductModal visible={modalVisible} product={selectedProduct} onClose={closeModal} />
+        <ProductModal
+          visible={modalVisible}
+          product={selectedProduct}
+          onClose={closeModal}
+        />
       )}
     </SafeAreaView>
   );
