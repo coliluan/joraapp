@@ -95,6 +95,8 @@ const ProductModel = mongoose.model('products', productSchema);
 
 
 // Express route (example)
+
+
 app.post('/api/upload-product', upload.single('image'), async (req, res) => {
   try {
     const { title, price, category } = req.body;
@@ -125,10 +127,21 @@ app.post('/api/upload-product', upload.single('image'), async (req, res) => {
   }
 });
 
+app.post('/api/products', async (req, res) => {
+  try {
+    const { title, price, category, imageUrl } = req.body;
+    const product = await Product.create({ title, price, category, imageUrl });
+    res.status(201).json(product);
+  } catch (err) {
+    res.status(500).json({ message: 'Error adding product.' });
+  }
+});
+
 // ✅ ROUTE: Get all products
 app.get('/api/products', async (req, res) => {
   try {
-    const products = await ProductModel.find().sort({ createdAt: -1 });
+    const products = await ProductModel.find().sort({ createdAt: -1 }).limit(20);
+
     const formatted = products.map(p => ({
       _id: p._id,
       title: p.title,
@@ -140,6 +153,15 @@ app.get('/api/products', async (req, res) => {
   } catch (err) {
     console.error('❌ Error getting products:', err);
     res.status(500).json({ message: 'Gabim në server.' });
+  }
+});
+
+app.get('/api/products', async (req, res) => {
+  try {
+    const products = await Product.find().sort({ createdAt: -1 });
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching products.' });
   }
 });
 
@@ -166,7 +188,6 @@ app.delete('/api/products/:id', async (req, res) => {
   }
 });
 
-// ✅ PUT: Përditëso produkt (pa image)
 // ✅ PUT: Përditëso produkt (pa image)
 app.put('/api/products/:id', upload.single('image'), async (req, res) => {
   try {

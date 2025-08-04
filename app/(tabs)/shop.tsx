@@ -1,9 +1,10 @@
 import { globalStyles } from '@/assets/globalStyles';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { Card, Text } from 'react-native-paper';
 import { ENDPOINTS, getApiUrl } from '../../config/api';
+import LoginModal from '../components/loginModal';
 import ProductModal from '../components/productModal';
 import { useUserStore } from '../store/useUserStore';
 
@@ -12,10 +13,14 @@ const Shop = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const user = useUserStore(state => state.user);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Te gjitha');
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const { user, isLoggedIn, loadUserFromStorage } = useUserStore();
+
+  useEffect(() => {
+      loadUserFromStorage();
+  }, []);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -48,7 +53,6 @@ const Shop = () => {
     setModalVisible(false); // Close the modal
   };
 
-  // Increment and decrement logic
   const handleQuantityChange = (productId: string, operation: 'increment' | 'decrement') => {
     setProducts((prevProducts) => {
       const updatedProducts = prevProducts.map((product) => {
@@ -75,23 +79,16 @@ const Shop = () => {
     alert(`Added ${product.quantity} of ${product.title} to the cart.`);
   };
 
-  if (loading) {
-    return <ActivityIndicator size="large" color="#0000ff" />;
-  }
-
-  // Handle search
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     filterProducts(query, selectedCategory);
   };
 
-  // Handle category click
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category);
     filterProducts(searchQuery, category);
   };
 
-  // Filter products based on search query and category
   const filterProducts = (query: string, category: string) => {
     let filtered = products;
 
@@ -111,8 +108,10 @@ const Shop = () => {
   };
 
   return (
-    <SafeAreaView>
+  <SafeAreaView>
+    {isLoggedIn ? (
       <ScrollView style={styles.container}>
+        {/* Notification button */}
         <View style={globalStyles.notification}>
           <TouchableOpacity
             onPress={() => {
@@ -120,7 +119,8 @@ const Shop = () => {
                 router.push('/components/notificationModal');
               }
             }}
-            disabled={user?.isGuest || !user?.firstName}>
+            disabled={user?.isGuest || !user?.firstName}
+          >
             <Image source={require('../../assets/images/notification.png')} />
           </TouchableOpacity>
         </View>
@@ -159,59 +159,91 @@ const Shop = () => {
           ))}
         </View>
 
-        {/* Product Cards */}
+        {/* Produktet */}
         <View style={styles.cardContainer}>
-          {filteredProducts.map((product) => (
-            <TouchableOpacity style={styles.card} key={product._id} onPress={() => handleProductClick(product)}>
-              <Card>
-                <Card.Cover style={styles.productImage} source={{ uri: getApiUrl(product.image) }} />
-                <Card.Content>
-                  <Text style={styles.title} variant="titleLarge">{product.title}</Text>
-                  <Text style={styles.price} variant="bodyMedium">{product.price}€</Text>
-                </Card.Content>
-                <Card.Actions style={styles.quantityContainer}>
-                  <View style={styles.quantityButtons}>
-                    <View style={styles.leftSection}>
+          {filteredProducts.length === 0 ? (
+            <Text style={{ textAlign: 'center', marginTop: 20 }}>
+              {loading ? 'Duke ngarkuar produketet...' : 'Asnjë produkt nuk u gjet.'}
+            </Text>
+          ) : (
+            filteredProducts.map((product) => (
+              <TouchableOpacity
+                style={styles.card}
+                key={product._id}
+                onPress={() => handleProductClick(product)}
+              >
+                <Card>
+                  <Card.Cover
+                    style={styles.productImage}
+                    source={{ uri: getApiUrl(product.image) }}
+                  />
+                  <Card.Content>
+                    <Text style={styles.title} variant="titleLarge">
+                      {product.title}
+                    </Text>
+                    <Text style={styles.price} variant="bodyMedium">
+                      {product.price}€
+                    </Text>
+                  </Card.Content>
+                  <Card.Actions style={styles.quantityContainer}>
+                    <View style={styles.quantityButtons}>
+                      <View style={styles.leftSection}>
+                        <TouchableOpacity
+                          style={styles.counter}
+                          onPress={() =>
+                            handleQuantityChange(product._id, 'decrement')
+                          }
+                        >
+                          <Text>-</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.quantity}>{product.quantity}</Text>
+                        <TouchableOpacity
+                          style={styles.counter}
+                          onPress={() =>
+                            handleQuantityChange(product._id, 'increment')
+                          }
+                        >
+                          <Text>+</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.rightSection}>
+                        <TouchableOpacity style={styles.buttonFavorite}>
+                          <Image
+                            style={styles.favorite}
+                            source={require('../../assets/images/favorite.png')}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                    <View style={styles.cartButton}>
                       <TouchableOpacity
-                        style={styles.counter}
-                        onPress={() => handleQuantityChange(product._id, 'decrement')}>
-                        <Text>-</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.quantity}>{product.quantity}</Text>
-                      <TouchableOpacity
-                        style={styles.counter}
-                        onPress={() => handleQuantityChange(product._id, 'increment')}>
-                        <Text>+</Text>
+                        style={styles.buttonCart}
+                        onPress={() => handleAddToCart(product)}
+                      >
+                        <Text>Add to Cart</Text>
                       </TouchableOpacity>
                     </View>
-                    <View style={styles.rightSection}>
-                      <TouchableOpacity style={styles.buttonFavorite}>
-                        <Image style={styles.favorite} source={require('../../assets/images/favorite.png')} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                  <View style={styles.cartButton}>
-                    <TouchableOpacity style={styles.buttonCart} onPress={() => handleAddToCart(product)}>
-                      <Text>Add to Cart</Text>
-                    </TouchableOpacity>
-                  </View>
-                </Card.Actions>
-              </Card>
-            </TouchableOpacity>
-          ))}
+                  </Card.Actions>
+                </Card>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </ScrollView>
+    ) : (
+      <LoginModal />
+    )}
 
-      {/* Product Modal with selected product */}
-      {selectedProduct && (
-        <ProductModal
-          visible={modalVisible}
-          product={selectedProduct}
-          onClose={closeModal}
-        />
-      )}
-    </SafeAreaView>
-  );
+    {selectedProduct && (
+      <ProductModal
+        visible={modalVisible}
+        product={selectedProduct}
+        onClose={closeModal}
+      />
+    )}
+  </SafeAreaView>
+);
+
 };
 
 const styles = StyleSheet.create({
