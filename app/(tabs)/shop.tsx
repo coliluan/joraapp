@@ -14,6 +14,7 @@ import { Card, Text } from 'react-native-paper';
 import { ENDPOINTS, getApiUrl } from '../../config/api';
 import LoginModal from '../components/loginModal';
 import ProductModal from '../components/productModal';
+import { useCartStore } from '../store/cartStore';
 import { useUserStore } from '../store/useUserStore';
 
 const Shop = () => {
@@ -25,6 +26,8 @@ const Shop = () => {
   const [selectedCategory, setSelectedCategory] = useState('Te gjitha');
   const { user, isLoggedIn, loadUserFromStorage } = useUserStore();
   const [quantities, setQuantities] = useState<{ [productId: string]: number }>({});
+  const { addToCart } = useCartStore();
+
 
   // Load user
   useEffect(() => {
@@ -89,15 +92,24 @@ const Shop = () => {
   };
 
   const changeQuantity = (productId: string, type: 'increase' | 'decrease') => {
-  setQuantities(prev => {
-    const current = prev[productId] || 1;
-    const newQuantity = type === 'increase' ? current + 1 : Math.max(1, current - 1);
+  setQuantities((prev) => {
+    const current = prev[productId] ?? 0; // Default to 0 if not set yet
+
+    let newQuantity;
+    if (type === 'increase') {
+      newQuantity = current === 0 ? 1 : current; // Only increment if it's 0, otherwise keep it as the last number
+    } else {
+      newQuantity = Math.max(0, current - 1); // Ensure minimum quantity is 0
+    }
+
     return {
       ...prev,
       [productId]: newQuantity,
     };
   });
 };
+
+
 
 
   if (user?.isGuest || !isLoggedIn) {
@@ -182,7 +194,7 @@ const Shop = () => {
                         >
                           <Text>-</Text>
                         </TouchableOpacity>
-                        <Text style={styles.quantity}>{quantities[product._id] || 1}</Text>
+                        <Text style={styles.quantity}>{quantities[product._id] || 0}</Text>
                         <TouchableOpacity
                           style={styles.counter}
                           onPress={() => changeQuantity(product._id, 'increase')}
@@ -200,20 +212,33 @@ const Shop = () => {
                       </View>
                     </View>
                     <View style={styles.cartButton}>
-                      <TouchableOpacity style={styles.buttonCart}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          const qty = quantities[product._id] || 0;
+                          if (qty > 0) addToCart(product._id, qty);
+                        }}
+                        style={styles.buttonCart}
+                      >
                         <Text style={{ color: 'white' }}>Shto në Shportë</Text>
                       </TouchableOpacity>
                     </View>
                   </Card.Actions>
                 </Card>
               </TouchableOpacity>
+              
             ))
-          ) : (
+          ) 
+          
+          : (
             <Text style={{ textAlign: 'center', marginTop: 20 }}>
               Nuk ka produkte.
             </Text>
           )}
         </View>
+        <TouchableOpacity style={styles.shopButton} onPress={() => router.push('../components/store')}>
+          <Text>Karta</Text>
+        </TouchableOpacity>
+        
       </ScrollView>
 
       {selectedProduct && (
@@ -230,6 +255,7 @@ const Shop = () => {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 15,
+    position: 'relative',
   },
   cardContainer: {
     flexDirection: 'row',
@@ -373,6 +399,13 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 15,
     alignItems: 'center',
+  },
+  shopButton: {
+    position: 'absolute',
+    zIndex: 1,
+    bottom: 60,
+    right: 0,
+    color: 'red'
   },
 });
 
