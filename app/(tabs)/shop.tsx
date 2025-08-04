@@ -10,7 +10,6 @@ import { useUserStore } from '../store/useUserStore';
 
 const Shop = () => {
   const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,8 +35,6 @@ const Shop = () => {
         setFilteredProducts(updatedProducts);
       } catch (error) {
         console.error('Error fetching products:', error);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -79,16 +76,19 @@ const Shop = () => {
     alert(`Added ${product.quantity} of ${product.title} to the cart.`);
   };
 
+  // Handle search
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     filterProducts(query, selectedCategory);
   };
 
+  // Handle category click
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category);
     filterProducts(searchQuery, category);
   };
 
+  // Filter products based on search query and category
   const filterProducts = (query: string, category: string) => {
     let filtered = products;
 
@@ -108,142 +108,108 @@ const Shop = () => {
   };
 
   return (
-  <SafeAreaView>
-    {isLoggedIn ? (
-      <ScrollView style={styles.container}>
-        {/* Notification button */}
-        <View style={globalStyles.notification}>
-          <TouchableOpacity
-            onPress={() => {
-              if (!user?.isGuest && user?.firstName) {
-                router.push('/components/notificationModal');
-              }
-            }}
-            disabled={user?.isGuest || !user?.firstName}
-          >
-            <Image source={require('../../assets/images/notification.png')} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Search Input */}
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search products..."
-          value={searchQuery}
-          onChangeText={handleSearch}
-        />
-
-        {/* Sort and Filter Buttons */}
-        <View style={styles.sortFilterContainer}>
-          <TouchableOpacity style={styles.button}>
-            <Text>Sort</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.button}>
-            <Text>Filter</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Category Buttons */}
-        <View style={styles.categoryContainer}>
-          {['Te gjitha', 'Ushqimore', 'Vendore', 'Higjenike'].map((category) => (
+    <SafeAreaView>
+      {isLoggedIn ? (
+        <ScrollView style={styles.container}>
+          <View style={globalStyles.notification}>
             <TouchableOpacity
-              key={category}
-              style={[
-                styles.categoryButton,
-                selectedCategory === category && styles.selectedCategory,
-              ]}
-              onPress={() => handleCategoryClick(category)}
-            >
-              <Text style={styles.categoryText}>{category}</Text>
+              onPress={() => {
+                if (!user?.isGuest && user?.firstName) {
+                  router.push('/components/notificationModal');
+                }
+              }}
+              disabled={user?.isGuest || !user?.firstName}>
+              <Image source={require('../../assets/images/notification.png')} />
             </TouchableOpacity>
-          ))}
-        </View>
+          </View>
 
-        {/* Produktet */}
-        <View style={styles.cardContainer}>
-          {filteredProducts.length === 0 ? (
-            <Text style={{ textAlign: 'center', marginTop: 20 }}>
-              {loading ? 'Duke ngarkuar produketet...' : 'Asnjë produkt nuk u gjet.'}
-            </Text>
-          ) : (
-            filteredProducts.map((product) => (
+          {/* Search Input */}
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search products..."
+            value={searchQuery}
+            onChangeText={handleSearch}
+          />
+
+          {/* Sort and Filter Buttons */}
+          <View style={styles.sortFilterContainer}>
+            <TouchableOpacity style={styles.button}>
+              <Text>Sort</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.button}>
+              <Text>Filter</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Category Buttons */}
+          <View style={styles.categoryContainer}>
+            {['Te gjitha', 'Ushqimore', 'Vendore', 'Higjenike'].map((category) => (
               <TouchableOpacity
-                style={styles.card}
-                key={product._id}
-                onPress={() => handleProductClick(product)}
+                key={category}
+                style={[
+                  styles.categoryButton,
+                  selectedCategory === category && styles.selectedCategory,
+                ]}
+                onPress={() => handleCategoryClick(category)}
               >
+                <Text style={styles.categoryText}>{category}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Product Cards */}
+          <View style={styles.cardContainer}>
+            {filteredProducts.map((product) => (
+              <TouchableOpacity style={styles.card} key={product._id} onPress={() => handleProductClick(product)}>
                 <Card>
-                  <Card.Cover
-                    style={styles.productImage}
-                    source={{ uri: getApiUrl(product.image) }}
-                  />
+                  <Card.Cover style={styles.productImage} source={{ uri: getApiUrl(product.image) }} />
                   <Card.Content>
-                    <Text style={styles.title} variant="titleLarge">
-                      {product.title}
-                    </Text>
-                    <Text style={styles.price} variant="bodyMedium">
-                      {product.price}€
-                    </Text>
+                    <Text style={styles.title} variant="titleLarge">{product.title}</Text>
+                    <Text style={styles.price} variant="bodyMedium">{product.price}€</Text>
                   </Card.Content>
                   <Card.Actions style={styles.quantityContainer}>
                     <View style={styles.quantityButtons}>
                       <View style={styles.leftSection}>
                         <TouchableOpacity
                           style={styles.counter}
-                          onPress={() =>
-                            handleQuantityChange(product._id, 'decrement')
-                          }
+                          onPress={() => handleQuantityChange(product._id, 'decrement')}
                         >
                           <Text>-</Text>
                         </TouchableOpacity>
                         <Text style={styles.quantity}>{product.quantity}</Text>
                         <TouchableOpacity
                           style={styles.counter}
-                          onPress={() =>
-                            handleQuantityChange(product._id, 'increment')
-                          }
+                          onPress={() => handleQuantityChange(product._id, 'increment')}
                         >
                           <Text>+</Text>
                         </TouchableOpacity>
                       </View>
                       <View style={styles.rightSection}>
                         <TouchableOpacity style={styles.buttonFavorite}>
-                          <Image
-                            style={styles.favorite}
-                            source={require('../../assets/images/favorite.png')}
-                          />
+                          <Image style={styles.favorite} source={require('../../assets/images/favorite.png')} />
                         </TouchableOpacity>
                       </View>
                     </View>
                     <View style={styles.cartButton}>
-                      <TouchableOpacity
-                        style={styles.buttonCart}
-                        onPress={() => handleAddToCart(product)}
-                      >
+                      <TouchableOpacity style={styles.buttonCart} onPress={() => handleAddToCart(product)}>
                         <Text>Add to Cart</Text>
                       </TouchableOpacity>
                     </View>
                   </Card.Actions>
                 </Card>
               </TouchableOpacity>
-            ))
-          )}
-        </View>
-      </ScrollView>
-    ) : (
-      <LoginModal />
-    )}
+            ))}
+          </View>
+        </ScrollView>
+      ) : (
+        <LoginModal />
+      )}
 
-    {selectedProduct && (
-      <ProductModal
-        visible={modalVisible}
-        product={selectedProduct}
-        onClose={closeModal}
-      />
-    )}
-  </SafeAreaView>
-);
-
+      {selectedProduct && (
+        <ProductModal visible={modalVisible} product={selectedProduct} onClose={closeModal} />
+      )}
+    </SafeAreaView>
+  );
 };
 
 const styles = StyleSheet.create({
