@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ENDPOINTS, getApiUrl } from '../../config/api'; // Adjust path as needed
+import { ENDPOINTS, getApiUrl } from '../../config/api'; // Rruga kontrollo që është korrekte për ty
 import { useUserStore } from './useUserStore';
 
 interface FavoriteStore {
@@ -24,11 +24,12 @@ export const useFavoriteStore = create<FavoriteStore>((set, get) => ({
       console.log('Fetching favorites from:', url);
 
       const res = await fetch(url);
-      const text = await res.text();
-      console.log('Favorites response text:', text);
+      if (!res.ok) {
+        console.error('Error fetching favorites:', res.status, res.statusText);
+        return;
+      }
 
-      // Parse text as JSON (me try-catch shtesë nëse do)
-      const data = JSON.parse(text);
+      const data = await res.json();
       set({ favorites: data.favorites || [] });
     } catch (err) {
       console.error('Failed to load favorites:', err);
@@ -48,14 +49,19 @@ export const useFavoriteStore = create<FavoriteStore>((set, get) => ({
     set({ favorites: updatedFavorites, loading: true });
 
     try {
-      await fetch(getApiUrl(ENDPOINTS.USER_FAVORITES(user._id)), {
+      const url = getApiUrl(ENDPOINTS.USER_FAVORITES(user._id));
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId, action: isFavorite ? 'remove' : 'add' }),
       });
+
+      if (!res.ok) {
+        throw new Error(`Failed to update favorites: ${res.statusText}`);
+      }
     } catch (err) {
       console.error('Failed to sync favorite:', err);
-      set({ favorites }); // rollback on error
+      set({ favorites }); // rollback
     } finally {
       set({ loading: false });
     }

@@ -136,6 +136,14 @@ const Shop = () => {
             <Image source={require('../../assets/images/notification.png')} />
           </TouchableOpacity>
         </View>
+        <View style={globalStyles.notification}>
+          <TouchableOpacity
+            onPress={() => router.push('../components/favorite_product')}
+          >
+            <Image style={styles.favoriteIcon} source={require('../../assets/images/favorite-icon.png')} />
+          </TouchableOpacity>
+        </View>
+        
 
         {/* Search */}
         <TextInput
@@ -251,16 +259,16 @@ const Shop = () => {
           ) : (
             <Text style={{ textAlign: 'center', marginTop: 20 }}>Nuk ka produkte.</Text>
           )}
-        </View>
-
-        {/* Shporta */}
+        </View>        
+      </ScrollView>
+      <View style={styles.fixedCartButtonContainer}>
         <TouchableOpacity
-          style={styles.shopButton}
+          style={styles.fixedCartButton}
           onPress={() => router.push('../components/store')}
         >
-          <Text>Karta</Text>
+          <Text style={styles.fixedCartButtonText}>Karta</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
 
       {selectedProduct && (
         <ProductModal visible={modalVisible} product={selectedProduct} onClose={closeModal} />
@@ -420,13 +428,39 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     alignItems: 'center',
   },
-  shopButton: {
-    position: 'fixed',
-    zIndex: 1,
-    bottom: 60,
-    left: 310,
-    // color: 'red'
-  },
+  fixedCartButtonContainer: {
+  position: 'absolute',
+  top: 700,
+  left: 250,
+  right: 0,
+  alignItems: 'center',
+  zIndex: 1000,
+},
+
+fixedCartButton: {
+  backgroundColor: 'red',
+  paddingVertical: 12,
+  paddingHorizontal: 30,
+  borderRadius: 30,
+  elevation: 5,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.3,
+  shadowRadius: 4,
+},
+
+fixedCartButtonText: {
+  color: 'black',
+  fontWeight: 'bold',
+  fontSize: 16,
+},
+
+  favoriteIcon:{
+    width: 50,
+    borderRadius: '100%',
+    height: 50,
+    backgroundColor: 'red'
+  }
 });
 
 export default Shop;

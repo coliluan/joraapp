@@ -32,5 +32,5 @@ export const ENDPOINTS = {
   PDF: (id: string) => `/api/pdf/${id}`,
   USER: (firstName: string) => `/api/user/${firstName}`,
   PRODUCTS: '/api/products',
-  USER_FAVORITES: (userId: string) => `/users/${userId}/favorites`,
+  USER_FAVORITES: (userId: string) => `/api/users/${userId}/favorites`,
 }; 
