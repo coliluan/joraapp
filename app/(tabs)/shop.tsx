@@ -165,7 +165,13 @@ const Shop = () => {
               ]}
               onPress={() => handleCategoryClick(category)}
             >
-              <Text style={styles.categoryText}>{category}</Text>
+              <Text
+                style={[
+                styles.categoryText,
+                selectedCategory === category && styles.selectedCategoryText,
+              ]}
+              
+              >{category}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -390,6 +396,9 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 14,
+  },
+  selectedCategoryText: {
+    color: 'white',
   },
   categoryContainer: {
     flexDirection: 'row',

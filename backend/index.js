@@ -65,6 +65,11 @@ const userSchema = new mongoose.Schema({
     default: 'user',
   },
   expoPushToken: String,
+  favorites: {
+  type: [String],
+  default: [],
+},
+
 }, { timestamps: true });
 
 const UserModel = mongoose.model('users', userSchema);
@@ -201,7 +206,37 @@ app.put('/api/products/:id', upload.single('image'), async (req, res) => {
   }
 });
 
+app.get('/api/users/:id/favorites', async (req, res) => {
+  try {
+    const user = await UserModel.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
+    res.json({ favorites: user.favorites || [] });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+app.post('/api/users/:id/favorites', async (req, res) => {
+  const { productId, action } = req.body;
+  try {
+    const user = await UserModel.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (action === 'add') {
+      if (!user.favorites.includes(productId)) {
+        user.favorites.push(productId);
+      }
+    } else if (action === 'remove') {
+      user.favorites = user.favorites.filter(id => id !== productId);
+    }
+
+    await user.save();
+    res.json({ favorites: user.favorites });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 
 app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {

@@ -147,7 +147,19 @@ export default function RootLayout() {
         }}
         name="components/privacy"
       />
-
+      <Stack.Screen
+        options={{
+          title: 'Favorites',
+          headerShown: true,
+          headerTitleAlign: 'center',
+          headerTintColor: '#171717',
+          headerTitleStyle: { fontWeight: '500' },
+          gestureEnabled: true,
+          headerBackVisible: false,
+          headerBackTitle: '',
+        }}
+        name="components/favorite_product"
+      />
     </Stack>
     </LanguageProvider>
     
