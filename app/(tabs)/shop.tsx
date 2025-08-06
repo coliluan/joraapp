@@ -1,6 +1,6 @@
 import { globalStyles } from '@/assets/globalStyles';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Image,
   SafeAreaView,
@@ -109,16 +109,36 @@ const Shop = () => {
   };
 
   const changeQuantity = (productId: string, type: 'increase' | 'decrease') => {
-    setQuantities(prev => {
-      const current = prev[productId] ?? 0;
-      let newQuantity = type === 'increase' ? current + 1 : Math.max(0, current - 1);
-      return { ...prev, [productId]: newQuantity };
-    });
-  };
+  const currentQuantity = quantities[productId] ?? 0;
+  const newQuantity = type === 'increase' ? currentQuantity + 1 : Math.max(0, currentQuantity - 1);
+
+  setQuantities(prev => ({
+    ...prev,
+    [productId]: newQuantity,
+  }));
+
+  // ✅ Update Zustand state separately (after setting quantities)
+  addToCart(productId, newQuantity);
+};
+
+
 
   if (user?.isGuest || !isLoggedIn) {
     return <LoginModal />;
   }
+
+  const totalPrice = useMemo(() => {
+  let total = 0;
+  for (const productId in quantities) {
+    const quantity = quantities[productId];
+    const product = products.find(p => p._id === productId);
+    if (product && quantity > 0) {
+      total += quantity * parseFloat(product.price);
+    }
+  }
+  return total.toFixed(2);
+}, [quantities, products]);
+
 
   return (
     <SafeAreaView>
@@ -157,12 +177,6 @@ const Shop = () => {
         <View style={styles.sortFilterContainer}>
           <TouchableOpacity style={styles.button}>
             <Text>Sort</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => router.push('../components/favorite_product')}
-          >
-            <Text>Produktet Favorite</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.button}>
             <Text>Filter</Text>
@@ -263,10 +277,35 @@ const Shop = () => {
       </ScrollView>
       <View style={styles.fixedCartButtonContainer}>
         <TouchableOpacity
-          style={styles.fixedCartButton}
-          onPress={() => router.push('../components/store')}
-        >
-          <Text style={styles.fixedCartButtonText}>Karta</Text>
+  style={styles.fixedCartButton}
+  onPress={() => {
+  const selectedProducts = Object.entries(quantities)
+    .filter(([productId, qty]) => qty > 0)
+    .map(([productId, qty]) => {
+      const product = products.find(p => p._id === productId);
+      if (product) {
+        return {
+          ...product,
+          quantity: qty,
+        };
+      }
+      return null;
+    })
+    .filter(Boolean);
+
+  // ✅ Corrected pathname
+  router.push({
+    pathname: '../components/store',
+    params: {
+      data: JSON.stringify(selectedProducts),
+    },
+  });
+}}
+
+>
+          <Image style={styles.cartImage} source={require('../../assets/images/shopping.png')} />
+          <Text style={styles.fixedCartButtonText}>
+             {totalPrice}€</Text>
         </TouchableOpacity>
       </View>
 
@@ -440,19 +479,28 @@ const styles = StyleSheet.create({
 fixedCartButton: {
   backgroundColor: 'red',
   paddingVertical: 12,
-  paddingHorizontal: 30,
+  paddingHorizontal: 15,
   borderRadius: 30,
   elevation: 5,
   shadowColor: '#000',
   shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.3,
   shadowRadius: 4,
+  display: 'flex',
+  flexDirection:'row',
+  alignItems: 'center',
 },
 
 fixedCartButtonText: {
-  color: 'black',
+  color: 'white',
   fontWeight: 'bold',
   fontSize: 16,
+  justifyContent: 'center',
+  alignItems:'center',
+},
+cartImage: {
+  width: 30,
+  height: 30,
 },
 
   favoriteIcon:{

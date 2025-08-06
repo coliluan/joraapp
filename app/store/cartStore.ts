@@ -17,10 +17,33 @@ export const useCartStore = create<CartStore>((set) => ({
 
   addToCart: (productId, quantity) =>
     set((state) => {
-      const filtered = state.cart.filter(item => item.productId !== productId);
-      return {
-        cart: [...filtered, { productId, quantity }],
-      };
+      if (quantity <= 0) {
+        // Fshi produktin nëse sasia është 0 ose më pak
+        return {
+          cart: state.cart.map((item) =>
+            item.productId === productId
+              ? { ...item, quantity }
+              : item
+          ),
+        };
+      }
+
+      const existingItem = state.cart.find((item) => item.productId === productId);
+      if (existingItem) {
+        // Ndrysho sasinë nëse ekziston
+        return {
+          cart: state.cart.map((item) =>
+            item.productId === productId
+              ? { ...item, quantity }
+              : item
+          ),
+        };
+      } else {
+        // Shto si produkt i ri
+        return {
+          cart: [...state.cart, { productId, quantity }],
+        };
+      }
     }),
 
   removeFromCart: (productId) =>
