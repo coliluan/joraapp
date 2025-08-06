@@ -15,6 +15,7 @@ import { ENDPOINTS, getApiUrl } from '../../config/api';
 import LoginModal from '../components/loginModal';
 import ProductModal from '../components/productModal';
 import { useCartStore } from '../store/cartStore';
+import { useFavoriteStore } from '../store/favoritesStore';
 import { useUserStore } from '../store/useUserStore';
 
 const Shop = () => {
@@ -26,8 +27,11 @@ const Shop = () => {
   const [selectedCategory, setSelectedCategory] = useState('Te gjitha');
   const { user, isLoggedIn, loadUserFromStorage } = useUserStore();
   const [quantities, setQuantities] = useState<{ [productId: string]: number }>({});
-  const { addToCart } = useCartStore();
+  const { cart, addToCart } = useCartStore(state => state); 
 
+  // Merr favorite global dhe funksion toggle nga zustand store
+  const favorites = useFavoriteStore(state => state.favorites);
+  const toggleFavorite = useFavoriteStore(state => state.toggleFavorite);
 
   // Load user
   useEffect(() => {
@@ -43,16 +47,22 @@ const Shop = () => {
         if (Array.isArray(data.products)) {
           setProducts(data.products);
           setFilteredProducts(data.products);
-        } else {
-          console.warn('Expected products to be array but got:', data);
         }
       } catch (err) {
         console.error('Error fetching products:', err);
       }
     };
-
     fetchProducts();
   }, []);
+
+  // Sync quantities me cart store
+  useEffect(() => {
+    const initialQuantities: { [productId: string]: number } = {};
+    cart.forEach(item => {
+      initialQuantities[item.productId] = item.quantity;
+    });
+    setQuantities(initialQuantities);
+  }, [cart]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -92,25 +102,12 @@ const Shop = () => {
   };
 
   const changeQuantity = (productId: string, type: 'increase' | 'decrease') => {
-  setQuantities((prev) => {
-    const current = prev[productId] ?? 0; // Default to 0 if not set yet
-
-    let newQuantity;
-    if (type === 'increase') {
-      newQuantity = current === 0 ? 1 : current; // Only increment if it's 0, otherwise keep it as the last number
-    } else {
-      newQuantity = Math.max(0, current - 1); // Ensure minimum quantity is 0
-    }
-
-    return {
-      ...prev,
-      [productId]: newQuantity,
-    };
-  });
-};
-
-
-
+    setQuantities(prev => {
+      const current = prev[productId] ?? 0;
+      let newQuantity = type === 'increase' ? current + 1 : Math.max(0, current - 1);
+      return { ...prev, [productId]: newQuantity };
+    });
+  };
 
   if (user?.isGuest || !isLoggedIn) {
     return <LoginModal />;
@@ -145,6 +142,12 @@ const Shop = () => {
         <View style={styles.sortFilterContainer}>
           <TouchableOpacity style={styles.button}>
             <Text>Sort</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => router.push('../components/favorite_product')}
+          >
+            <Text>Produktet Favorite</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.button}>
             <Text>Filter</Text>
@@ -194,7 +197,9 @@ const Shop = () => {
                         >
                           <Text>-</Text>
                         </TouchableOpacity>
-                        <Text style={styles.quantity}>{quantities[product._id] || 0}</Text>
+                        <Text style={styles.quantity}>
+                          {quantities[product._id] || 0}
+                        </Text>
                         <TouchableOpacity
                           style={styles.counter}
                           onPress={() => changeQuantity(product._id, 'increase')}
@@ -203,21 +208,25 @@ const Shop = () => {
                         </TouchableOpacity>
                       </View>
                       <View style={styles.rightSection}>
-                        <TouchableOpacity style={styles.buttonFavorite}>
-                          <Image
-                            style={styles.favorite}
-                            source={require('../../assets/images/favorite.png')}
-                          />
-                        </TouchableOpacity>
-                      </View>
+                      <TouchableOpacity
+                        style={styles.buttonFavorite}
+                        onPress={() => toggleFavorite(product._id)}
+                      >
+                        <Image
+                          style={styles.favorite}
+                          source={
+                            favorites.includes(product._id)
+                              ? require('../../assets/images/favorite-selected.png')
+                              : require('../../assets/images/favorite.png')
+                          }
+                        />
+                      </TouchableOpacity>
+                    </View>
                     </View>
                     <View style={styles.cartButton}>
                       <TouchableOpacity
-                        onPress={() => {
-                          const qty = quantities[product._id] || 0;
-                          if (qty > 0) addToCart(product._id, qty);
-                        }}
                         style={styles.buttonCart}
+                        onPress={() => addToCart(product._id, quantities[product._id] || 0)}
                       >
                         <Text style={{ color: 'white' }}>Shto në Shportë</Text>
                       </TouchableOpacity>
@@ -225,28 +234,23 @@ const Shop = () => {
                   </Card.Actions>
                 </Card>
               </TouchableOpacity>
-              
             ))
-          ) 
-          
-          : (
-            <Text style={{ textAlign: 'center', marginTop: 20 }}>
-              Nuk ka produkte.
-            </Text>
+          ) : (
+            <Text style={{ textAlign: 'center', marginTop: 20 }}>Nuk ka produkte.</Text>
           )}
         </View>
-        <TouchableOpacity style={styles.shopButton} onPress={() => router.push('../components/store')}>
+
+        {/* Shporta */}
+        <TouchableOpacity
+          style={styles.shopButton}
+          onPress={() => router.push('../components/store')}
+        >
           <Text>Karta</Text>
         </TouchableOpacity>
-        
       </ScrollView>
 
       {selectedProduct && (
-        <ProductModal
-          visible={modalVisible}
-          product={selectedProduct}
-          onClose={closeModal}
-        />
+        <ProductModal visible={modalVisible} product={selectedProduct} onClose={closeModal} />
       )}
     </SafeAreaView>
   );
@@ -401,11 +405,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   shopButton: {
-    position: 'absolute',
+    position: 'fixed',
     zIndex: 1,
     bottom: 60,
-    right: 0,
-    color: 'red'
+    left: 310,
+    // color: 'red'
   },
 });
 

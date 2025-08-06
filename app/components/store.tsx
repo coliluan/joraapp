@@ -8,7 +8,6 @@ const Store = () => {
   const [products, setProducts] = useState<any[]>([]);
 
   useEffect(() => {
-    // Fetch all products to get title and price
     const fetchProducts = async () => {
       try {
         const response = await fetch(getApiUrl(ENDPOINTS.PRODUCTS));
@@ -24,15 +23,20 @@ const Store = () => {
     fetchProducts();
   }, []);
 
-  // Map cart items with product info
-  const cartDetails = cart.map(item => {
-    const product = products.find(p => p._id === item.productId);
-    return {
-      ...item,
-      title: product?.title || 'Produkt i panjohur',
-      price: product?.price || 0,
-    };
-  });
+  // Filtron artikujt me quantity > 0 dhe i bashkon me info të produktit
+  const cartDetails = cart
+    .filter(item => item.quantity > 0)
+    .map(item => {
+      const product = products.find(p => p._id === item.productId);
+      return {
+        ...item,
+        title: product?.title || 'Produkt i panjohur',
+        price: product?.price || 0,
+      };
+    });
+
+  // Totali i shportës
+  const total = cartDetails.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return (
     <ScrollView style={styles.container}>
@@ -40,14 +44,19 @@ const Store = () => {
       {cartDetails.length === 0 ? (
         <Text>Shporta është bosh.</Text>
       ) : (
-        cartDetails.map((item, index) => (
-          <View key={index} style={styles.itemContainer}>
-            <Text style={styles.title}>{item.title}</Text>
-            <Text>Sasia: {item.quantity}</Text>
-            <Text>Çmimi: {item.price} €</Text>
-            <Text>Totali: {(item.price * item.quantity).toFixed(2)} €</Text>
+        <>
+          {cartDetails.map((item, index) => (
+            <View key={index} style={styles.itemContainer}>
+              <Text style={styles.title}>{item.title}</Text>
+              <Text>Sasia: {item.quantity}</Text>
+              <Text>Çmimi: {item.price} €</Text>
+              <Text>Totali: {(item.price * item.quantity).toFixed(2)} €</Text>
+            </View>
+          ))}
+          <View style={styles.totalContainer}>
+            <Text style={styles.totalText}>Totali Gjithsej: {total.toFixed(2)} €</Text>
           </View>
-        ))
+        </>
       )}
     </ScrollView>
   );
@@ -56,8 +65,15 @@ const Store = () => {
 const styles = StyleSheet.create({
   container: { padding: 15 },
   header: { fontSize: 22, fontWeight: 'bold', marginBottom: 15 },
-  itemContainer: { marginBottom: 20, borderBottomWidth: 1, borderColor: '#ccc', paddingBottom: 10 },
+  itemContainer: {
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    paddingBottom: 10,
+  },
   title: { fontSize: 18, fontWeight: '600' },
+  totalContainer: { marginTop: 20, borderTopWidth: 1, borderColor: '#aaa', paddingTop: 10 },
+  totalText: { fontSize: 20, fontWeight: 'bold' },
 });
 
 export default Store;

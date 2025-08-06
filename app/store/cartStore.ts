@@ -1,4 +1,3 @@
-// store/cartStore.ts
 import { create } from 'zustand';
 
 interface CartItem {
@@ -18,20 +17,10 @@ export const useCartStore = create<CartStore>((set) => ({
 
   addToCart: (productId, quantity) =>
     set((state) => {
-      const existing = state.cart.find((item) => item.productId === productId);
-      if (existing) {
-        return {
-          cart: state.cart.map((item) =>
-            item.productId === productId
-              ? { ...item, quantity: item.quantity + quantity }
-              : item
-          ),
-        };
-      } else {
-        return {
-          cart: [...state.cart, { productId, quantity }],
-        };
-      }
+      const filtered = state.cart.filter(item => item.productId !== productId);
+      return {
+        cart: [...filtered, { productId, quantity }],
+      };
     }),
 
   removeFromCart: (productId) =>
