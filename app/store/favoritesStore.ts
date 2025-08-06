@@ -4,6 +4,7 @@ import { useUserStore } from './useUserStore';
 
 interface FavoriteStore {
   favorites: string[];
+  loading: boolean;
   toggleFavorite: (productId: string) => Promise<void>;
   removeFavorite: (productId: string) => void;
   clearFavorites: () => void;
@@ -12,14 +13,22 @@ interface FavoriteStore {
 
 export const useFavoriteStore = create<FavoriteStore>((set, get) => ({
   favorites: [],
+  loading: false,
 
   loadFavorites: async () => {
     const { user } = useUserStore.getState();
     if (!user?._id) return;
 
     try {
-      const res = await fetch(getApiUrl(ENDPOINTS.USER_FAVORITES(user._id)));
-      const data = await res.json();
+      const url = getApiUrl(ENDPOINTS.USER_FAVORITES(user._id));
+      console.log('Fetching favorites from:', url);
+
+      const res = await fetch(url);
+      const text = await res.text();
+      console.log('Favorites response text:', text);
+
+      // Parse text as JSON (me try-catch shtesë nëse do)
+      const data = JSON.parse(text);
       set({ favorites: data.favorites || [] });
     } catch (err) {
       console.error('Failed to load favorites:', err);
@@ -36,24 +45,19 @@ export const useFavoriteStore = create<FavoriteStore>((set, get) => ({
       ? favorites.filter(id => id !== productId)
       : [...favorites, productId];
 
-    // Optimistically update UI
-    set({ favorites: updatedFavorites });
+    set({ favorites: updatedFavorites, loading: true });
 
     try {
       await fetch(getApiUrl(ENDPOINTS.USER_FAVORITES(user._id)), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          productId,
-          action: isFavorite ? 'remove' : 'add',
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, action: isFavorite ? 'remove' : 'add' }),
       });
     } catch (err) {
       console.error('Failed to sync favorite:', err);
-      // Rollback if error
-      set({ favorites });
+      set({ favorites }); // rollback on error
+    } finally {
+      set({ loading: false });
     }
   },
 

@@ -217,6 +217,7 @@ app.get('/api/users/:id/favorites', async (req, res) => {
   }
 });
 
+
 app.post('/api/users/:id/favorites', async (req, res) => {
   const { productId, action } = req.body;
   try {

@@ -28,6 +28,7 @@ const Shop = () => {
   const { user, isLoggedIn, loadUserFromStorage } = useUserStore();
   const [quantities, setQuantities] = useState<{ [productId: string]: number }>({});
   const { cart, addToCart } = useCartStore(state => state); 
+  const loadFavorites = useFavoriteStore(state => state.loadFavorites);
 
   // Merr favorite global dhe funksion toggle nga zustand store
   const favorites = useFavoriteStore(state => state.favorites);
@@ -37,6 +38,12 @@ const Shop = () => {
   useEffect(() => {
     loadUserFromStorage();
   }, []);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      loadFavorites();  // Ngarko favorite nga backend
+    }
+  }, [isLoggedIn]);
 
   // Fetch products
   useEffect(() => {
