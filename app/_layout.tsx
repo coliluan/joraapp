@@ -160,6 +160,19 @@ export default function RootLayout() {
         }}
         name="components/favorite_product"
       />
+      <Stack.Screen
+        options={{
+          title: '',
+          headerShown: true,
+          headerTitleAlign: 'center',
+          headerTintColor: '#171717',
+          headerTitleStyle: { fontWeight: '500' },
+          gestureEnabled: true,
+          headerBackVisible: false,
+          headerBackTitle: '',
+        }}
+        name="components/store"
+      />
     </Stack>
     </LanguageProvider>
     
