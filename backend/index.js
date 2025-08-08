@@ -98,45 +98,6 @@ const productSchema = new mongoose.Schema({
 const ProductModel = mongoose.model('products', productSchema);
 
 
-app.post('/api/productpackage', upload.single('image'), (req, res) => {
-  const { title, price } = req.body;
-  const image = req.file; 
-  
-  if (!title || !price || !image) {
-    return res.status(400).json({ message: 'Missing required fields' });
-  }
-
-  const newProduct = new ProductModel({
-    title,
-    price,
-    image: image.buffer, 
-    imageType: image.mimetype,
-  });
-
-  newProduct.save()
-    .then((product) => res.status(201).json(product))
-    .catch((err) => {
-      console.error(err);
-      res.status(500).json({ message: 'Failed to add product' });
-    });
-});
-
-
-// GET /api/productpackage
-
-app.get('/api/productpackage', (req, res) => {
-  res.json(productPackages);
-});
-
-app.get('/productpackage', (req, res) => {
-  ProductModel.find({}, (err, products) => {
-    if (err) return res.status(500).json({ message: "Failed to fetch products" });
-    res.json(products);
-  });
-});
-
-
-
 // Express route (example)
 app.post('/api/upload-product', upload.single('image'), async (req, res) => {
   try {
