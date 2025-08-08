@@ -153,6 +153,7 @@ app.get('/api/packages/:packageId/products', async (req, res) => {
   }
 });
 
+
 app.delete('/api/packages/:packageId/products/:productId', async (req, res) => {
   const { packageId, productId } = req.params;
 
