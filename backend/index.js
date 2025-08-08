@@ -97,6 +97,75 @@ const productSchema = new mongoose.Schema({
 
 const ProductModel = mongoose.model('products', productSchema);
 
+const packageSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  products: [{
+    title: String,
+    price: String,
+    imageUrl: Buffer, // Store image as Buffer for better handling
+  }],
+}, { timestamps: true });
+
+const PackageModel = mongoose.model('Package', packageSchema);
+
+app.post('/api/packages/:packageId/products', upload.single('image'), async (req, res) => {
+  const { title, price } = req.body;
+  const { packageId } = req.params;
+  const image = req.file ? req.file.buffer : null;
+
+  try {
+    const updatedPackage = await PackageModel.findByIdAndUpdate(
+      packageId,
+      { $push: { products: { title, price, imageUrl: image } } },
+      { new: true }
+    );
+
+    if (!updatedPackage) {
+      return res.status(404).json({ message: 'Package not found.' });
+    }
+
+    res.status(201).json({ products: updatedPackage.products });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error while adding product.' });
+  }
+});
+
+app.get('/api/packages/:packageId/products', async (req, res) => {
+  const { packageId } = req.params;
+
+  try {
+    const packageData = await PackageModel.findById(packageId);
+    if (!packageData) {
+      return res.status(404).json({ message: 'Package not found.' });
+    }
+
+    res.json({ products: packageData.products });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error while fetching products.' });
+  }
+});
+
+app.delete('/api/packages/:packageId/products/:productId', async (req, res) => {
+  const { packageId, productId } = req.params;
+
+  try {
+    const updatedPackage = await PackageModel.findByIdAndUpdate(
+      packageId,
+      { $pull: { products: { _id: productId } } },
+      { new: true }
+    );
+
+    if (!updatedPackage) {
+      return res.status(404).json({ message: 'Package or Product not found.' });
+    }
+
+    res.json({ message: 'Product deleted successfully', products: updatedPackage.products });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error while deleting product.' });
+  }
+});
+
+
 
 // Express route (example)
 app.post('/api/upload-product', upload.single('image'), async (req, res) => {
