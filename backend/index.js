@@ -202,6 +202,79 @@ app.put('/api/products/:id', upload.single('image'), async (req, res) => {
   }
 });
 
+
+
+app.post('/api/packages', async (req, res) => {
+  try {
+    const { title } = req.body;
+    const newPackage = new Package({ title });
+    await newPackage.save();
+    res.status(201).json(newPackage);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rruga për të marrë produktet e një pakete
+app.get('/api/packages/:packageId/products', async (req, res) => {
+  try {
+    const { packageId } = req.params;
+    const foundPackage = await Package.findById(packageId).populate('products');
+    if (!foundPackage) {
+      return res.status(404).json({ message: 'Package not found' });
+    }
+    res.status(200).json(foundPackage.products);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rruga për të shtuar një produkt në një paketë
+app.post('/api/packages/:packageId/products', upload.single('image'), async (req, res) => {
+  try {
+    const { packageId } = req.params;
+    const { title, price } = req.body;
+    const imageUrl = req.file ? req.file.path : null;
+
+    // Krijo një produkt të ri
+    const newProduct = new Product({ title, price, imageUrl });
+    await newProduct.save();
+
+    // Gjej paketën dhe shto produktin
+    const updatedPackage = await Package.findByIdAndUpdate(
+      packageId,
+      { $push: { products: newProduct._id } },
+      { new: true }
+    );
+
+    res.status(201).json(updatedPackage);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rruga për të fshirë një produkt nga një paketë
+app.delete('/api/packages/:packageId/products/:productId', async (req, res) => {
+  try {
+    const { packageId, productId } = req.params;
+
+    // Fshi produktin nga baza e të dhënave
+    await Product.findByIdAndDelete(productId);
+
+    // Heq produktin nga lista e paketës
+    const updatedPackage = await Package.findByIdAndUpdate(
+      packageId,
+      { $pull: { products: productId } },
+      { new: true }
+    );
+
+    res.status(200).json(updatedPackage);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
 app.get('/api/users/:id/favorites', async (req, res) => {
   try {
     const user = await UserModel.findById(req.params.id);
