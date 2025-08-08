@@ -98,6 +98,24 @@ const productSchema = new mongoose.Schema({
 const ProductModel = mongoose.model('products', productSchema);
 
 
+app.post('/api/productpackage', upload.single('image'), (req, res) => {
+  const { title, price } = req.body;
+  const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
+
+  const newProduct = { title, price, imageUrl };
+  productPackages.push(newProduct);
+
+  res.status(201).json(newProduct);
+});
+
+// GET /api/productpackage
+app.get('/api/productpackage', (req, res) => {
+  res.json(productPackages);
+});
+
+
+
+
 // Express route (example)
 app.post('/api/upload-product', upload.single('image'), async (req, res) => {
   try {
