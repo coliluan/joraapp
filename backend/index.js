@@ -139,7 +139,15 @@ app.get('/api/packages/:packageId/products', async (req, res) => {
       return res.status(404).json({ message: 'Package not found.' });
     }
 
-    res.json({ products: packageData.products });
+    // Convert image buffer to base64 string
+    const productsWithImages = packageData.products.map(product => {
+      if (product.imageUrl) {
+        product.imageUrl = product.imageUrl.toString('base64');
+      }
+      return product;
+    });
+
+    res.json({ products: productsWithImages });
   } catch (err) {
     res.status(500).json({ message: 'Server error while fetching products.' });
   }
@@ -164,6 +172,9 @@ app.delete('/api/packages/:packageId/products/:productId', async (req, res) => {
     res.status(500).json({ message: 'Server error while deleting product.' });
   }
 });
+
+
+
 
 
 
