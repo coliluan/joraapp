@@ -238,7 +238,7 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   scrollContainer: {
     paddingHorizontal: 20,
-    paddingTop: 45,
+    paddingTop: 15,
     paddingBottom: 65,
     backgroundColor: '#FAFAFA',
   },

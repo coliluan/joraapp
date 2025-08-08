@@ -62,7 +62,7 @@ const user = useUserStore(state => state.user);
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 15,
-    paddingVertical: 45,
+    paddingVertical: 15,
     backgroundColor: '#FAFAFA',
   },
   header: {

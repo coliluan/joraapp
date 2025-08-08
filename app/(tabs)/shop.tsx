@@ -319,6 +319,7 @@ const Shop = () => {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 15,
+    paddingVertical: 15,
     position: 'relative',
   },
   cardContainer: {

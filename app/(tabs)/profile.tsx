@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   innerContent: {
-    paddingVertical: 45,
+    paddingVertical: 15,
     paddingHorizontal: 15,
     gap: 24.5,
   },

@@ -108,18 +108,17 @@ export default function App() {
       </PaperProvider>
     );
   }
-
   return null;
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#EB2328',
+    backgroundColor: '#eb1c24',
   },
   onboardingContainer: {
     flex: 1,
-    backgroundColor: '#FF3D00',
+    backgroundColor: '#eb1c24',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -131,7 +130,7 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     paddingBottom: 124,
-    backgroundColor: '#EB2328',
+    backgroundColor: '#eb1c24',
   },
   topVisitor: {
     alignItems: 'flex-end',
@@ -187,7 +186,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 20,
     fontWeight: '500',
-    color: '#EB2328',
+    color: '#eb1c24',
     fontFamily: 'Poppins-Regular',
   },
 });
