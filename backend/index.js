@@ -108,57 +108,42 @@ const packageSchema = new mongoose.Schema({
 
 const PackageModel = mongoose.model('Package', packageSchema);
 
+// POST: /api/packages/:packageId/products
 app.post('/api/packages/:packageId/products', upload.single('image'), async (req, res) => {
   try {
+    const { packageId } = req.params;
     const { title, price } = req.body;
-    const packageId = req.params.packageId;
 
-    if (!title || !price || !req.file) {
-      return res.status(400).json({ message: "Title, price dhe image janë të detyrueshme" });
+    if (!title || !price) {
+      return res.status(400).json({ message: 'Title dhe price janë të detyrueshme.' });
     }
 
-    const foundPackage = await PackageModel.findById(packageId);
-    if (!foundPackage) {
-      return res.status(404).json({ message: "Package nuk u gjet" });
+    const imageBuffer = req.file ? req.file.buffer : null;
+
+    const updatedPackage = await PackageModel.findByIdAndUpdate(
+      packageId,
+      {
+        $push: {
+          products: {
+            title,
+            price,
+            imageUrl: imageBuffer
+          }
+        }
+      },
+      { new: true }
+    );
+
+    if (!updatedPackage) {
+      return res.status(404).json({ message: 'Paketa nuk u gjet.' });
     }
 
-    const newProduct = {
-      title,
-      price,
-      imageUrl: req.file.buffer // Ruaj si Buffer
-    };
-
-    foundPackage.products.push(newProduct);
-    await foundPackage.save();
-
-    res.status(201).json({ message: "Produkti u shtua me sukses", product: newProduct });
-  } catch (error) {
-    console.error("Gabim në shtimin e produktit:", error);
-    res.status(500).json({ message: "Gabim serveri" });
+    res.json({ message: 'Produkti u shtua me sukses.', package: updatedPackage });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Gabim gjatë shtimit të produktit.' });
   }
 });
-
-
-app.get('/api/packages/:packageId/products', async (req, res) => {
-  try {
-    const foundPackage = await PackageModel.findById(req.params.packageId);
-    if (!foundPackage) {
-      return res.status(404).json({ message: "Package nuk u gjet" });
-    }
-
-    // Kthe imazhet si base64 për shfaqje në frontend
-    const products = foundPackage.products.map(prod => ({
-      ...prod.toObject(),
-      imageUrl: prod.imageUrl ? prod.imageUrl.toString('base64') : null
-    }));
-
-    res.json(products);
-  } catch (error) {
-    console.error("Gabim në marrjen e produkteve:", error);
-    res.status(500).json({ message: "Gabim serveri" });
-  }
-});
-
 
 // Express route (example)
 app.post('/api/upload-product', upload.single('image'), async (req, res) => {
