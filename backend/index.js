@@ -91,10 +91,9 @@ const PdfModel = mongoose.model('pdfs', pdfSchema);
 const productSchema = new mongoose.Schema({
   title: { type: String, required: true },
   price: { type: String, required: true },
-  imageUrl: { type: Buffer, required: false }, // Allow null for optional images
-  imageType: { type: String }, // Store MIME type of the image
+  image: { type: Buffer, required: true },
+  imageType: { type: String }, // for sending back as base64
 }, { timestamps: true });
-
 
 const ProductModel = mongoose.model('products', productSchema);
 
@@ -109,63 +108,71 @@ const packageSchema = new mongoose.Schema({
 
 const PackageModel = mongoose.model('Package', packageSchema);
 
-// Backend: Implement the POST endpoint to add a product to a package
 app.post('/api/packages/:packageId/products', upload.single('image'), async (req, res) => {
+  const { title, price } = req.body;
+  const { packageId } = req.params;
+  const image = req.file ? req.file.buffer : null;
+
   try {
-    const { packageId } = req.params;
-    const { title, price } = req.body;
-
-    // Get the product image buffer from the file uploaded via multer
-    const imageBuffer = req.file ? req.file.buffer : null;
-
-    // Create a new product object
-    const newProduct = {
-      title,
-      price,
-      imageUrl: imageBuffer,
-    };
-
-    // Find the package by its ID and add the new product to the package's products array
     const updatedPackage = await PackageModel.findByIdAndUpdate(
       packageId,
-      { $push: { products: newProduct } },
+      { $push: { products: { title, price, imageUrl: image } } },
       { new: true }
-    ).select('products'); // Ensures only the products array is returned
+    );
 
     if (!updatedPackage) {
-      return res.status(404).json({ message: 'Package not found' });
+      return res.status(404).json({ message: 'Package not found.' });
     }
 
-    // Respond with the updated product list of the package
-    res.status(200).json(updatedPackage.products);
-  } catch (error) {
-    console.error('Error adding product:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(201).json({ products: updatedPackage.products });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error while adding product.' });
   }
 });
-
-
 
 app.get('/api/packages/:packageId/products', async (req, res) => {
+  const { packageId } = req.params;
+
   try {
-    const { packageId } = req.params;
-
-    // Find the package by its ID and populate the products array
     const packageData = await PackageModel.findById(packageId);
-
     if (!packageData) {
-      return res.status(404).json({ message: 'Package not found' });
+      return res.status(404).json({ message: 'Package not found.' });
     }
 
-    // Respond with the products of the package
-    res.status(200).json(packageData.products);
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    res.status(500).json({ message: 'Server error' });
+    // Convert image buffer to base64 string
+    const productsWithImages = packageData.products.map(product => {
+      if (product.imageUrl) {
+        product.imageUrl = product.imageUrl.toString('base64');
+      }
+      return product;
+    });
+
+    res.json({ products: productsWithImages });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error while fetching products.' });
   }
 });
 
 
+app.delete('/api/packages/:packageId/products/:productId', async (req, res) => {
+  const { packageId, productId } = req.params;
+
+  try {
+    const updatedPackage = await PackageModel.findByIdAndUpdate(
+      packageId,
+      { $pull: { products: { _id: productId } } },
+      { new: true }
+    );
+
+    if (!updatedPackage) {
+      return res.status(404).json({ message: 'Package or Product not found.' });
+    }
+
+    res.json({ message: 'Product deleted successfully', products: updatedPackage.products });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error while deleting product.' });
+  }
+});
 
 
 // Express route (example)
