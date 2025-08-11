@@ -91,9 +91,10 @@ const PdfModel = mongoose.model('pdfs', pdfSchema);
 const productSchema = new mongoose.Schema({
   title: { type: String, required: true },
   price: { type: String, required: true },
-  image: { type: Buffer, required: true },
-  imageType: { type: String }, // for sending back as base64
+  imageUrl: { type: Buffer, required: false }, // Allow null for optional images
+  imageType: { type: String }, // Store MIME type of the image
 }, { timestamps: true });
+
 
 const ProductModel = mongoose.model('products', productSchema);
 
@@ -116,14 +117,12 @@ app.post('/api/packages/:packageId/products', upload.single('image'), async (req
 
     // Get the product image buffer from the file uploaded via multer
     const imageBuffer = req.file ? req.file.buffer : null;
-    const imageType = req.file ? req.file.mimetype : null;
 
     // Create a new product object
     const newProduct = {
       title,
       price,
       imageUrl: imageBuffer,
-      imageType,
     };
 
     // Find the package by its ID and add the new product to the package's products array
@@ -131,19 +130,20 @@ app.post('/api/packages/:packageId/products', upload.single('image'), async (req
       packageId,
       { $push: { products: newProduct } },
       { new: true }
-    );
+    ).select('products'); // Ensures only the products array is returned
 
     if (!updatedPackage) {
       return res.status(404).json({ message: 'Package not found' });
     }
 
-    // Respond with the updated package and product list
-    res.status(200).json(updatedPackage);
+    // Respond with the updated product list of the package
+    res.status(200).json(updatedPackage.products);
   } catch (error) {
     console.error('Error adding product:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 
 app.get('/api/packages/:packageId/products', async (req, res) => {
@@ -166,13 +166,6 @@ app.get('/api/packages/:packageId/products', async (req, res) => {
 });
 
 
-
-app.delete('/api/packages/:packageId/products/:productId', async (req, res) => {
-  
-
-   
-   
-});
 
 
 // Express route (example)
