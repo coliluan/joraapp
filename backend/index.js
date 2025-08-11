@@ -109,68 +109,53 @@ const packageSchema = new mongoose.Schema({
 const PackageModel = mongoose.model('Package', packageSchema);
 
 app.post('/api/packages/:packageId/products', upload.single('image'), async (req, res) => {
-  const { title, price } = req.body;
-  const { packageId } = req.params;
-  const image = req.file ? req.file.buffer : null;
-
   try {
-    const updatedPackage = await PackageModel.findByIdAndUpdate(
-      packageId,
-      { $push: { products: { title, price, imageUrl: image } } },
-      { new: true }
-    );
+    const { title, price } = req.body;
+    const packageId = req.params.packageId;
 
-    if (!updatedPackage) {
-      return res.status(404).json({ message: 'Package not found.' });
+    if (!title || !price || !req.file) {
+      return res.status(400).json({ message: "Title, price dhe image janë të detyrueshme" });
     }
 
-    res.status(201).json({ products: updatedPackage.products });
-  } catch (err) {
-    res.status(500).json({ message: 'Server error while adding product.' });
+    const foundPackage = await PackageModel.findById(packageId);
+    if (!foundPackage) {
+      return res.status(404).json({ message: "Package nuk u gjet" });
+    }
+
+    const newProduct = {
+      title,
+      price,
+      imageUrl: req.file.buffer // Ruaj si Buffer
+    };
+
+    foundPackage.products.push(newProduct);
+    await foundPackage.save();
+
+    res.status(201).json({ message: "Produkti u shtua me sukses", product: newProduct });
+  } catch (error) {
+    console.error("Gabim në shtimin e produktit:", error);
+    res.status(500).json({ message: "Gabim serveri" });
   }
 });
+
 
 app.get('/api/packages/:packageId/products', async (req, res) => {
-  const { packageId } = req.params;
-
   try {
-    const packageData = await PackageModel.findById(packageId);
-    if (!packageData) {
-      return res.status(404).json({ message: 'Package not found.' });
+    const foundPackage = await PackageModel.findById(req.params.packageId);
+    if (!foundPackage) {
+      return res.status(404).json({ message: "Package nuk u gjet" });
     }
 
-    // Convert image buffer to base64 string
-    const productsWithImages = packageData.products.map(product => {
-      if (product.imageUrl) {
-        product.imageUrl = product.imageUrl.toString('base64');
-      }
-      return product;
-    });
+    // Kthe imazhet si base64 për shfaqje në frontend
+    const products = foundPackage.products.map(prod => ({
+      ...prod.toObject(),
+      imageUrl: prod.imageUrl ? prod.imageUrl.toString('base64') : null
+    }));
 
-    res.json({ products: productsWithImages });
-  } catch (err) {
-    res.status(500).json({ message: 'Server error while fetching products.' });
-  }
-});
-
-
-app.delete('/api/packages/:packageId/products/:productId', async (req, res) => {
-  const { packageId, productId } = req.params;
-
-  try {
-    const updatedPackage = await PackageModel.findByIdAndUpdate(
-      packageId,
-      { $pull: { products: { _id: productId } } },
-      { new: true }
-    );
-
-    if (!updatedPackage) {
-      return res.status(404).json({ message: 'Package or Product not found.' });
-    }
-
-    res.json({ message: 'Product deleted successfully', products: updatedPackage.products });
-  } catch (err) {
-    res.status(500).json({ message: 'Server error while deleting product.' });
+    res.json(products);
+  } catch (error) {
+    console.error("Gabim në marrjen e produkteve:", error);
+    res.status(500).json({ message: "Gabim serveri" });
   }
 });
 
