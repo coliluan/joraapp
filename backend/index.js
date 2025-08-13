@@ -109,29 +109,33 @@ const packageSchema = new mongoose.Schema({
 const PackageModel = mongoose.model('Package', packageSchema);
 
 // POST route to add product to a package
+// POST route to add product to a package
+// POST route to add product to a package
 app.post('/api/packages/:packageId/products', upload.single('image'), async (req, res) => {
   try {
     const { packageId } = req.params;
     const { title, price } = req.body;
     const image = req.file; // Image file from the request
 
-    // Find the package
-    const package = await PackageModel.findById(packageId);
-    if (!package) return res.status(404).json({ message: 'Package not found' });
+    // Find the package (Renamed 'package' to 'pkg' to avoid keyword conflict)
+    const pkg = await PackageModel.findById(packageId);
+    if (!pkg) return res.status(404).json({ message: 'Package not found' });
 
     // Create product
     const newProduct = { title, price, imageUrl: image.buffer };
 
     // Add the product to the package's products array
-    package.products.push(newProduct);
-    await package.save();
+    pkg.products.push(newProduct);
+    await pkg.save();
 
-    res.status(201).json({ products: package.products });
+    res.status(201).json({ products: pkg.products });
   } catch (err) {
     console.error('Error adding product:', err);
     res.status(500).json({ message: 'Error adding product' });
   }
 });
+
+
 
 
 
