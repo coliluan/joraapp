@@ -108,42 +108,32 @@ const packageSchema = new mongoose.Schema({
 
 const PackageModel = mongoose.model('Package', packageSchema);
 
-// POST: /api/packages/:packageId/products
+// POST route to add product to a package
 app.post('/api/packages/:packageId/products', upload.single('image'), async (req, res) => {
   try {
     const { packageId } = req.params;
     const { title, price } = req.body;
+    const image = req.file; // Image file from the request
 
-    if (!title || !price) {
-      return res.status(400).json({ message: 'Title dhe price janë të detyrueshme.' });
-    }
+    // Find the package
+    const package = await PackageModel.findById(packageId);
+    if (!package) return res.status(404).json({ message: 'Package not found' });
 
-    const imageBuffer = req.file ? req.file.buffer : null;
+    // Create product
+    const newProduct = { title, price, imageUrl: image.buffer };
 
-    const updatedPackage = await PackageModel.findByIdAndUpdate(
-      packageId,
-      {
-        $push: {
-          products: {
-            title,
-            price,
-            imageUrl: imageBuffer
-          }
-        }
-      },
-      { new: true }
-    );
+    // Add the product to the package's products array
+    package.products.push(newProduct);
+    await package.save();
 
-    if (!updatedPackage) {
-      return res.status(404).json({ message: 'Paketa nuk u gjet.' });
-    }
-
-    res.json({ message: 'Produkti u shtua me sukses.', package: updatedPackage });
+    res.status(201).json({ products: package.products });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Gabim gjatë shtimit të produktit.' });
+    console.error('Error adding product:', err);
+    res.status(500).json({ message: 'Error adding product' });
   }
 });
+
+
 
 // Express route (example)
 app.post('/api/upload-product', upload.single('image'), async (req, res) => {
