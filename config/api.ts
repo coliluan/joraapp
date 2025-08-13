@@ -6,8 +6,12 @@ export const API_CONFIG = {
   PRODUCTION: 'https://joraapp.onrender.com',
 };
 
+
+
 // Përdor URL lokale nëse jemi në development mode, përndryshe përdor production
-export const API_BASE = __DEV__ ? API_CONFIG.LOCAL : API_CONFIG.PRODUCTION;
+// export const API_BASE = __DEV__ ? API_CONFIG.LOCAL : API_CONFIG.PRODUCTION;
+export const API_BASE = API_CONFIG.LOCAL;
+
 
 // Helper function për të marrë URL-në e plotë për një endpoint
 export const getApiUrl = (endpoint: string) => `${API_BASE}${endpoint}`;

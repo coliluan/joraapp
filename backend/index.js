@@ -97,45 +97,124 @@ const productSchema = new mongoose.Schema({
 
 const ProductModel = mongoose.model('products', productSchema);
 
-const packageSchema = new mongoose.Schema({
+const productPackageSchema = new mongoose.Schema({
+  packageId: { type: mongoose.Schema.Types.ObjectId, ref: 'packages' },
   title: { type: String, required: true },
-  products: [{
-    title: String,
-    price: String,
-    imageUrl: Buffer, // Store image as Buffer for better handling
-  }],
+  price: { type: String, required: true },
+  image: { type: Buffer, required: true },
+  imageType: { type: String },
 }, { timestamps: true });
 
-const PackageModel = mongoose.model('Package', packageSchema);
+const ProductPackageModel = mongoose.model('productpackages', productPackageSchema);
 
-// POST route to add product to a package
-// POST route to add product to a package
-// POST route to add product to a package
+const packageSchema = new mongoose.Schema({
+  name: String,         // The name of the package
+  description: String,  // A short description of the package
+  price: String,        // The price of the package
+  // Any other fields you need for the package
+}, { timestamps: true });
+
+const PackageModel = mongoose.model('packages', packageSchema);
+
+
+
 app.post('/api/packages/:packageId/products', upload.single('image'), async (req, res) => {
   try {
-    const { packageId } = req.params;
     const { title, price } = req.body;
-    const image = req.file; // Image file from the request
+    if (!req.file) return res.status(400).json({ message: 'Asnjë imazh nuk u ngarkua.' });
 
-    // Find the package (Renamed 'package' to 'pkg' to avoid keyword conflict)
-    const pkg = await PackageModel.findById(packageId);
-    if (!pkg) return res.status(404).json({ message: 'Package not found' });
+    const product = await ProductPackageModel.create({
+      packageId: req.params.packageId,
+      title,
+      price,
+      image: req.file.buffer,
+      imageType: req.file.mimetype,
+    });
 
-    // Create product
-    const newProduct = { title, price, imageUrl: image.buffer };
-
-    // Add the product to the package's products array
-    pkg.products.push(newProduct);
-    await pkg.save();
-
-    res.status(201).json({ products: pkg.products });
+    res.status(201).json({
+      product: {
+        _id: product._id,
+        title: product.title,
+        price: product.price,
+        imageUrl: `/api/product-image/${product._id}`
+      }
+    });
   } catch (err) {
-    console.error('Error adding product:', err);
-    res.status(500).json({ message: 'Error adding product' });
+    console.error('❌ Error uploading product:', err);
+    res.status(500).json({ message: 'Gabim në server.' });
+  }
+});
+
+app.get('/api/packages', async (req, res) => {
+  try {
+    const packages = await PackageModel.find();
+    if (!packages.length) {
+      return res.status(404).json({ message: 'No packages found' });
+    }
+    res.json({ packages });
+  } catch (err) {
+    console.error('❌ Error fetching packages:', err);
+    res.status(500).json({ message: 'Gabim gjatë marrjes së paketave.' });
+  }
+});
+
+app.get('/api/packages/:packageId/products', async (req, res) => {
+  try {
+    const products = await ProductPackageModel.find({ packageId: req.params.packageId });
+    if (!products || products.length === 0) {
+      return res.status(404).json({ message: 'No products found.' });
+    }
+    
+    // Assuming product contains `image` buffer and `imageType` (mime type)
+    const productData = products.map(product => ({
+      title: product.title,
+      price: product.price,
+      imageUrl: `/api/product-image/${product._id}`,  // Make sure this path is correct
+    }));
+    
+    res.json({ products: productData });
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching products.' });
   }
 });
 
 
+
+app.get('/api/product-image/:id', async (req, res) => {
+  try {
+    // Provo fillimisht në ProductModel
+    let product = await ProductModel.findById(req.params.id);
+
+    // Nëse nuk gjendet aty, provo në ProductPackageModel
+    if (!product) {
+      product = await ProductPackageModel.findById(req.params.id);
+    }
+
+    if (!product || !product.image) {
+      return res.status(404).send('Imazhi nuk u gjet.');
+    }
+
+    res.set('Content-Type', product.imageType);
+    res.send(product.image);
+  } catch (err) {
+    console.error('❌ Error serving image:', err);
+    res.status(500).send('Gabim gjatë shfaqjes së imazhit.');
+  }
+});
+
+
+
+app.get('/api/package-product-image/:id', async (req, res) => {
+  try {
+    const product = await ProductPackageModel.findById(req.params.id);
+    if (!product || !product.image) return res.status(404).send('Imazhi nuk u gjet.');
+
+    res.set('Content-Type', product.imageType);
+    res.send(product.image);
+  } catch (err) {
+    res.status(500).send('Gabim gjatë shfaqjes së imazhit.');
+  }
+});
 
 
 
@@ -189,14 +268,15 @@ app.get('/api/products', async (req, res) => {
 app.get('/api/product-image/:id', async (req, res) => {
   try {
     const product = await ProductModel.findById(req.params.id);
-    if (!product || !product.image) return res.status(404).send('Imazhi nuk u gjet.');
+    if (!product || !product.image) return res.status(404).send('Image not found.');
 
     res.set('Content-Type', product.imageType);
     res.send(product.image);
   } catch (err) {
-    res.status(500).send('Gabim gjatë shfaqjes së imazhit.');
+    res.status(500).send('Error serving image.');
   }
 });
+
 
 app.delete('/api/products/:id', async (req, res) => {
   try {
@@ -253,7 +333,6 @@ app.get('/api/users/:id/favorites', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
-
 
 app.post('/api/users/:id/favorites', async (req, res) => {
   const { productId, action } = req.body;
