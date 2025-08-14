@@ -63,9 +63,10 @@ const Store = () => {
           cartDetails.map((item, index) => (
             <View key={index} style={styles.card}>
               <Image
-                source={{ uri: getApiUrl(item.image) }}
+                source={{ uri: item.image ? getApiUrl(item.image) : 'https://example.com/default-image.png' }}
                 style={styles.productImage}
               />
+
               <View style={styles.productInfo}>
                 <View>
                   <Text style={styles.title}>{item.title}</Text>

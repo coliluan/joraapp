@@ -100,9 +100,9 @@ const Shop = () => {
   };
 
   const handleProductClick = (product: any) => {
-    setSelectedProduct(product);
-    setModalVisible(true);
-  };
+  setSelectedProduct(product);
+  setModalVisible(true);
+};
 
   const closeModal = () => {
     setModalVisible(false);
@@ -120,8 +120,6 @@ const Shop = () => {
   // ✅ Update Zustand state separately (after setting quantities)
   addToCart(productId, newQuantity);
 };
-
-
 
   if (user?.isGuest || !isLoggedIn) {
     return <LoginModal />;
@@ -207,12 +205,12 @@ const Shop = () => {
 
         {/* Product cards */}
         <View style={styles.cardContainer}>
-          {Array.isArray(filteredProducts) && filteredProducts.length > 0 ? (
+           {Array.isArray(filteredProducts) && filteredProducts.length > 0 ? (
             filteredProducts.map(product => (
               <TouchableOpacity
                 key={product._id}
                 style={styles.card}
-                onPress={() => handleProductClick(product)}
+                onPress={() => handleProductClick(product)}  // Set selected product on click
               >
                 <Card>
                   <Card.Cover
@@ -268,7 +266,7 @@ const Shop = () => {
                     </View>
                   </Card.Actions>
                 </Card>
-              </TouchableOpacity>
+               </TouchableOpacity>
             ))
           ) : (
             <Text style={{ textAlign: 'center', marginTop: 20 }}>Nuk ka produkte.</Text>
@@ -310,7 +308,11 @@ const Shop = () => {
       </View>
 
       {selectedProduct && (
-        <ProductModal visible={modalVisible} product={selectedProduct} onClose={closeModal} />
+        <ProductModal 
+          visible={modalVisible} 
+          packageId={selectedProduct._id}  // Pass the correct packageId from selectedProduct
+          onClose={closeModal} 
+        />
       )}
     </SafeAreaView>
   );
@@ -321,15 +323,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 15,
     position: 'relative',
+    zIndex: 2,
   },
   cardContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    marginBottom: 90,
   },
   card: {
     width: '48%',
     marginBottom: 10,
+    zIndex: 1,
   },
   productImage: {
     width: '100%',
@@ -338,6 +343,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: 'transparent',
     resizeMode: 'contain',
+    zIndex: 1,
   },
   title: {
     fontSize: 16,
@@ -470,11 +476,12 @@ const styles = StyleSheet.create({
   },
   fixedCartButtonContainer: {
   position: 'absolute',
-  top: 700,
-  left: 250,
-  right: 0,
+  // top: 700,
+  // left: 250,
+  bottom: 100,
+  right: 10,
   alignItems: 'center',
-  zIndex: 1000,
+  zIndex: 10,
 },
 
 fixedCartButton: {
@@ -490,6 +497,7 @@ fixedCartButton: {
   display: 'flex',
   flexDirection:'row',
   alignItems: 'center',
+  zIndex: 10,
 },
 
 fixedCartButtonText: {

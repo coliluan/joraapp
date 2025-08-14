@@ -37,4 +37,5 @@ export const ENDPOINTS = {
   USER: (firstName: string) => `/api/user/${firstName}`,
   PRODUCTS: '/api/products',
   USER_FAVORITES: (userId: string) => `/api/users/${userId}/favorites`,
+  PACKAGE_PRODUCTS: (packageId: string) => `/api/packages/${packageId}/products`,
 }; 
