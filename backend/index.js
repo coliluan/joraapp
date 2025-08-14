@@ -116,6 +116,72 @@ const packageSchema = new mongoose.Schema({
 
 const PackageModel = mongoose.model('packages', packageSchema);
 
+// Shema për Banner
+const bannerSchema = new mongoose.Schema({
+  image: { type: Buffer, required: true },
+  imageType: { type: String, required: true }
+}, { timestamps: true });
+
+const BannerModel = mongoose.model('banner', bannerSchema);
+
+// API për ngarkimin e banner-it
+app.post('/api/upload-banner', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Asnjë imazh nuk u ngarkua.' });
+    }
+
+    // Krijo banner të ri pa fshirë të vjetrin
+    const banner = await BannerModel.create({
+      image: req.file.buffer,
+      imageType: req.file.mimetype
+    });
+
+    res.status(201).json({
+      message: 'Banner u ngarkua me sukses.',
+      imageUrl: `${req.protocol}://${req.get('host')}/api/banner-image/${banner._id}`
+    });
+  } catch (err) {
+    console.error('❌ Gabim gjatë ngarkimit të banner-it:', err);
+    res.status(500).json({ message: 'Gabim në server.' });
+  }
+});
+
+// API për marrjen e të gjitha banner-ave
+app.get('/api/get-all-banners', async (req, res) => {
+  try {
+    const banners = await BannerModel.find().sort({ createdAt: -1 });
+    if (!banners.length) {
+      return res.status(404).json({ message: 'Asnjë banner nuk u gjet.' });
+    }
+
+    const bannerUrls = banners.map(banner => ({
+      id: banner._id,
+      url: `${req.protocol}://${req.get('host')}/api/banner-image/${banner._id}`
+    }));
+
+    res.json(bannerUrls);
+  } catch (err) {
+    console.error('❌ Gabim gjatë marrjes së banerave:', err);
+    res.status(500).json({ message: 'Gabim në server.' });
+  }
+});
+
+// API për marrjen e imazhit të banner-it
+app.get('/api/banner-image/:id', async (req, res) => {
+  try {
+    const banner = await BannerModel.findById(req.params.id);
+    if (!banner) {
+      return res.status(404).json({ message: 'Banner nuk u gjet.' });
+    }
+
+    res.set('Content-Type', banner.imageType);
+    res.send(banner.image);
+  } catch (err) {
+    console.error('❌ Gabim gjatë shfaqjes së imazhit të banner-it:', err);
+    res.status(500).json({ message: 'Gabim në server.' });
+  }
+});
 
 
 app.post('/api/packages/:packageId/products', upload.single('image'), async (req, res) => {

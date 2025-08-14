@@ -1,10 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useIsFocused } from '@react-navigation/native';
 import { router } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
+  Animated,
+  Dimensions,
   FlatList,
   Image,
   Modal,
@@ -27,7 +29,11 @@ type Pdf = {
   [key: string]: any;
 };
 
-const capitalize = (str?: string) => str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+const { width } = Dimensions.get('window');
+const ITEM_SIZE = width * 0.7;
+const SPACING = 10;
+
+const capitalize = (str?: string) => (str ? str.toUpperCase() : '');
 
 const HomeScreen = () => {
   const { t } = useTranslation();
@@ -40,8 +46,10 @@ const HomeScreen = () => {
   const [notificationCount, setNotificationCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [uploadedBanners, setUploadedBanners] = useState<string[]>([]);
 
   const barcodeUrl = `${API_BASE}/api/barcode/${user?.barcode || ''}`;
+  const scrollX = useRef(new Animated.Value(0)).current;
 
   const fetchPdfs = useCallback(async () => {
     try {
@@ -96,46 +104,46 @@ const HomeScreen = () => {
     setIsPdfModalVisible(true);
   };
 
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/get-all-banners`);
+        const data = await response.json();
+        const urls = data.map((banner: { url: string }) => banner.url);
+        setUploadedBanners(urls);
+      } catch (err) {
+        console.error('Gabim gjatë ngarkimit të banerëve:', err);
+      }
+    };
+    fetchBanners();
+  }, []);
+
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
 
       <FlatList
-        data={pdfList}
-        keyExtractor={(item) => item._id}
-        numColumns={2}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
-        columnWrapperStyle={{ justifyContent: 'space-between' }}
-
-        contentContainerStyle={styles.scrollContainer}
+        data={[]}
+        style={styles.scrollContainer}
         ListHeaderComponent={
           <>
             <View style={globalStyles.notification}>
-                {user?.firstName ? (
-                  <TouchableOpacity
-                    onPress={() => {
-                      router.push('/components/notificationModal');
-                    }}
-                  >
-                    <Image source={require('../../assets/images/notification.png')} />
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    onPress={() => {
-                      router.push('../(auth)/logIn');
-                    }}
-                  >
-                    <Image style={styles.logo} source={require('../../assets/images/logs.png')} />
-                  </TouchableOpacity>
-                )}
+              {user?.firstName ? (
+                <TouchableOpacity onPress={() => router.push('/components/notificationModal')}>
+                  <Image source={require('../../assets/images/notification.png')} />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity onPress={() => router.push('../(auth)/logIn')}>
+                  <Image style={styles.logo} source={require('../../assets/images/logs.png')} />
+                </TouchableOpacity>
+              )}
+              {notificationCount > 0 && user?.firstName && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{notificationCount}</Text>
+                </View>
+              )}
+            </View>
 
-                {notificationCount > 0 && user?.firstName && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{notificationCount}</Text>
-                  </View>
-                )}
-              </View>
             <View style={styles.header}>
               <Text style={globalStyles.title}>
                 {t('home.title')}{' '}
@@ -144,9 +152,7 @@ const HomeScreen = () => {
               <Text style={globalStyles.phone}>{user?.number || ''}</Text>
             </View>
 
-            {user?.barcode && (
-              <Image source={{ uri: barcodeUrl }} style={styles.barcode} />
-            )}
+            {user?.barcode && <Image source={{ uri: barcodeUrl }} style={styles.barcode} />}
 
             {!user?.firstName && (
               <>
@@ -179,33 +185,99 @@ const HomeScreen = () => {
                 </View>
               </>
             )}
+
             <Text style={styles.sectionTitle}>{t('home.sectionTitle')}</Text>
-          </>
-        }
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => openPdfModal(item)} style={styles.cardImage}>
-            <View style={styles.pdfContainer}>
-              <Image
-                source={require('../../assets/images/fletushka.png')}
-                style={{ width: '100%', height: 217, borderRadius: 5 }}
+
+           <View style={{ justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
+  <FlatList
+    data={uploadedBanners}
+    keyExtractor={(item, index) => index.toString()}
+    horizontal
+    showsHorizontalScrollIndicator={false}
+    contentContainerStyle={{ justifyContent: 'center', alignItems: 'center' }}
+    renderItem={({ item }) => (
+      <Image
+        source={{ uri: item }}
+        style={styles.bannerImage}
+      />
+    )}
+  />
+</View>
+
+
+            {/* Carousel PDF */}
+            {loading ? (
+              <ActivityIndicator size="large" color="#EB2328" style={{ marginTop: 30 }} />
+            ) : pdfList.length > 0 ? (
+              <Animated.FlatList
+                data={pdfList}
+                keyExtractor={(item) => item._id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                snapToInterval={ITEM_SIZE}
+                decelerationRate="fast"
+                bounces={false}
+                contentContainerStyle={{ paddingHorizontal: (width - ITEM_SIZE) / 2 }}
+                onScroll={Animated.event(
+                  [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+                  { useNativeDriver: true }
+                )}
+                scrollEventThrottle={16}
+                renderItem={({ item, index }) => {
+                  const inputRange = [
+                    (index - 1) * ITEM_SIZE,
+                    index * ITEM_SIZE,
+                    (index + 1) * ITEM_SIZE,
+                  ];
+
+                  const scale = scrollX.interpolate({
+                    inputRange,
+                    outputRange: [0.85, 1, 0.85],
+                    extrapolate: 'clamp',
+                  });
+
+                  const opacity = scrollX.interpolate({
+                    inputRange,
+                    outputRange: [0.6, 1, 0.6],
+                    extrapolate: 'clamp',
+                  });
+
+                  return (
+                    <TouchableOpacity onPress={() => openPdfModal(item)} activeOpacity={0.8}>
+                      <Animated.View
+                        style={{
+                          width: ITEM_SIZE,
+                          marginHorizontal: SPACING / 2,
+                          transform: [{ scale }],
+                          opacity,
+                        }}
+                      >
+                        <Image
+                          source={require('../../assets/images/fletushka.png')}
+                          style={{
+                            width: '100%',
+                            height: 400,
+                            borderRadius: 10,
+                            resizeMode: 'cover',
+                          }}
+                        />
+                        <Text style={styles.pdfName}>
+                          {item.customName || item.name || item.filename || 'Untitled PDF'}
+                        </Text>
+                        {item.customSubtitle && (
+                          <Text style={styles.pdfSubtitle}>{item.customSubtitle}</Text>
+                        )}
+                      </Animated.View>
+                    </TouchableOpacity>
+                  );
+                }}
               />
-            </View>
-            <Text style={styles.pdfName}>
-              {item.customName || item.name || item.filename || 'Untitled PDF'}
-            </Text>
-            {item.customSubtitle && (
-              <Text style={styles.pdfSubtitle}>{item.customSubtitle}</Text>
+            ) : (
+              <Text style={{ textAlign: 'center', marginTop: 30 }}>
+                {t('home.noPdfs') || 'No PDFs available.'}
+              </Text>
             )}
-          </TouchableOpacity>
-        )}
-        ListEmptyComponent={
-          loading ? (
-            <ActivityIndicator size="large" color="#EB2328" style={{ marginTop: 30 }} />
-          ) : (
-            <Text style={{ textAlign: 'center', marginTop: 30 }}>
-              {t('home.noPdfs') || 'No PDFs available.'}
-            </Text>
-          )
+          </>
         }
       />
 
@@ -241,6 +313,7 @@ const styles = StyleSheet.create({
     paddingTop: 15,
     paddingBottom: 65,
     backgroundColor: '#FAFAFA',
+    height: '100%',
   },
   header: {
     marginBottom: 27,
@@ -261,27 +334,20 @@ const styles = StyleSheet.create({
     color: '#171717',
     marginBottom: 15,
   },
-  cardImage: {
-    width: '47%',
-    paddingBottom: 30,
-  },
-  pdfContainer: {
-    height: 217,
-    width: '100%',
-  },
   pdfName: {
     fontSize: 15,
     fontWeight: '500',
     color: '#171717',
-    textAlign: 'left',
+    textAlign: 'center',
     fontFamily: 'Poppins',
+    marginTop: 8,
   },
   pdfSubtitle: {
     fontSize: 10,
     fontWeight: '400',
     color: '#EB2328',
     fontFamily: 'Poppins',
-    textAlign: 'left',
+    textAlign: 'center',
   },
   badge: {
     position: 'absolute',
@@ -313,6 +379,15 @@ const styles = StyleSheet.create({
     width: 40,
     paddingTop: 10,
     height: 40,
+  },
+  bannerImage: {
+    width: 300,
+    height: 150,
+    borderRadius: 10,
+    marginRight: 10,
+    resizeMode: 'contain',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

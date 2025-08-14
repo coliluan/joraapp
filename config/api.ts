@@ -38,4 +38,5 @@ export const ENDPOINTS = {
   PRODUCTS: '/api/products',
   USER_FAVORITES: (userId: string) => `/api/users/${userId}/favorites`,
   PACKAGE_PRODUCTS: (packageId: string) => `/api/packages/${packageId}/products`,
+  GET_BANNERS: '/api/banners',
 }; 
