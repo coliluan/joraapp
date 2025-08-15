@@ -7,9 +7,9 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
-  FlatList,
   Image,
   Modal,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -44,7 +44,6 @@ const HomeScreen = () => {
   const [selectedPdf, setSelectedPdf] = useState<Pdf | null>(null);
   const [isPdfModalVisible, setIsPdfModalVisible] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploadedBanners, setUploadedBanners] = useState<string[]>([]);
 
@@ -85,12 +84,6 @@ const HomeScreen = () => {
     }
   }, []);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchPdfs();
-    setRefreshing(false);
-  }, [fetchPdfs]);
-
   useEffect(() => {
     if (isFocused) {
       loadUserFromStorage();
@@ -122,164 +115,168 @@ const HomeScreen = () => {
     <>
       <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
 
-      <FlatList
-        data={[]}
+      <ScrollView
         style={styles.scrollContainer}
-        ListHeaderComponent={
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={globalStyles.notification}>
+          {user?.firstName ? (
+            <TouchableOpacity onPress={() => router.push('/components/notificationModal')}>
+              <Image source={require('../../assets/images/notification.png')} />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={() => router.push('../(auth)/logIn')}>
+              <Image style={styles.logo} source={require('../../assets/images/logs.png')} />
+            </TouchableOpacity>
+          )}
+          {notificationCount > 0 && user?.firstName && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{notificationCount}</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.header}>
+          <Text style={globalStyles.title}>
+            {t('home.title')}{' '}
+            <Text style={styles.name}>{capitalize(user?.firstName)}</Text>,
+          </Text>
+          <Text style={globalStyles.phone}>{user?.number || ''}</Text>
+        </View>
+
+        {user?.barcode && <Image source={{ uri: barcodeUrl }} style={styles.barcode} />}
+
+        {!user?.firstName && (
           <>
-            <View style={globalStyles.notification}>
-              {user?.firstName ? (
-                <TouchableOpacity onPress={() => router.push('/components/notificationModal')}>
-                  <Image source={require('../../assets/images/notification.png')} />
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity onPress={() => router.push('../(auth)/logIn')}>
-                  <Image style={styles.logo} source={require('../../assets/images/logs.png')} />
-                </TouchableOpacity>
-              )}
-              {notificationCount > 0 && user?.firstName && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{notificationCount}</Text>
-                </View>
-              )}
+            <View style={globalStyles.guestsImageWrapper}>
+              <TouchableOpacity onPress={() => router.push('/components/history')}>
+                <Image
+                  source={require('../../assets/images/jora-guests.webp')}
+                  style={globalStyles.guestsImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
             </View>
-
-            <View style={styles.header}>
-              <Text style={globalStyles.title}>
-                {t('home.title')}{' '}
-                <Text style={styles.name}>{capitalize(user?.firstName)}</Text>,
-              </Text>
-              <Text style={globalStyles.phone}>{user?.number || ''}</Text>
+            <View style={globalStyles.guestsImageWrapper}>
+              <TouchableOpacity onPress={() => router.push('/components/jora_services')}>
+                <Image
+                  source={require('../../assets/images/jora-guests2.jpg')}
+                  style={globalStyles.guestsImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
             </View>
-
-            {user?.barcode && <Image source={{ uri: barcodeUrl }} style={styles.barcode} />}
-
-            {!user?.firstName && (
-              <>
-                <View style={globalStyles.guestsImageWrapper}>
-                  <TouchableOpacity onPress={() => router.push('/components/history')}>
-                    <Image
-                      source={require('../../assets/images/jora-guests.webp')}
-                      style={globalStyles.guestsImage}
-                      resizeMode="cover"
-                    />
-                  </TouchableOpacity>
-                </View>
-                <View style={globalStyles.guestsImageWrapper}>
-                  <TouchableOpacity onPress={() => router.push('/components/jora_services')}>
-                    <Image
-                      source={require('../../assets/images/jora-guests2.jpg')}
-                      style={globalStyles.guestsImage}
-                      resizeMode="cover"
-                    />
-                  </TouchableOpacity>
-                </View>
-                <View style={globalStyles.guestsImageWrapper}>
-                  <TouchableOpacity onPress={() => router.push('/components/privacy')}>
-                    <Image
-                      source={require('../../assets/images/location1.png')}
-                      style={globalStyles.guestsImage}
-                      resizeMode="cover"
-                    />
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-
-            <Text style={styles.sectionTitle}>{t('home.sectionTitle')}</Text>
-
-           <View style={{ justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
-  <FlatList
-    data={uploadedBanners}
-    keyExtractor={(item, index) => index.toString()}
-    horizontal
-    showsHorizontalScrollIndicator={false}
-    contentContainerStyle={{ justifyContent: 'center', alignItems: 'center' }}
-    renderItem={({ item }) => (
-      <Image
-        source={{ uri: item }}
-        style={styles.bannerImage}
-      />
-    )}
-  />
-</View>
-
-
-            {/* Carousel PDF */}
-            {loading ? (
-              <ActivityIndicator size="large" color="#EB2328" style={{ marginTop: 30 }} />
-            ) : pdfList.length > 0 ? (
-              <Animated.FlatList
-                data={pdfList}
-                keyExtractor={(item) => item._id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                snapToInterval={ITEM_SIZE}
-                decelerationRate="fast"
-                bounces={false}
-                contentContainerStyle={{ paddingHorizontal: (width - ITEM_SIZE) / 2 }}
-                onScroll={Animated.event(
-                  [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-                  { useNativeDriver: true }
-                )}
-                scrollEventThrottle={16}
-                renderItem={({ item, index }) => {
-                  const inputRange = [
-                    (index - 1) * ITEM_SIZE,
-                    index * ITEM_SIZE,
-                    (index + 1) * ITEM_SIZE,
-                  ];
-
-                  const scale = scrollX.interpolate({
-                    inputRange,
-                    outputRange: [0.85, 1, 0.85],
-                    extrapolate: 'clamp',
-                  });
-
-                  const opacity = scrollX.interpolate({
-                    inputRange,
-                    outputRange: [0.6, 1, 0.6],
-                    extrapolate: 'clamp',
-                  });
-
-                  return (
-                    <TouchableOpacity onPress={() => openPdfModal(item)} activeOpacity={0.8}>
-                      <Animated.View
-                        style={{
-                          width: ITEM_SIZE,
-                          marginHorizontal: SPACING / 2,
-                          transform: [{ scale }],
-                          opacity,
-                        }}
-                      >
-                        <Image
-                          source={require('../../assets/images/fletushka.png')}
-                          style={{
-                            width: '100%',
-                            height: 400,
-                            borderRadius: 10,
-                            resizeMode: 'cover',
-                          }}
-                        />
-                        <Text style={styles.pdfName}>
-                          {item.customName || item.name || item.filename || 'Untitled PDF'}
-                        </Text>
-                        {item.customSubtitle && (
-                          <Text style={styles.pdfSubtitle}>{item.customSubtitle}</Text>
-                        )}
-                      </Animated.View>
-                    </TouchableOpacity>
-                  );
-                }}
-              />
-            ) : (
-              <Text style={{ textAlign: 'center', marginTop: 30 }}>
-                {t('home.noPdfs') || 'No PDFs available.'}
-              </Text>
-            )}
+            <View style={globalStyles.guestsImageWrapper}>
+              <TouchableOpacity onPress={() => router.push('/components/privacy')}>
+                <Image
+                  source={require('../../assets/images/location1.png')}
+                  style={globalStyles.guestsImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            </View>
           </>
-        }
-      />
+        )}
+
+        <Text style={styles.sectionTitle}>{t('home.sectionTitle')}</Text>
+
+        <View style={{ justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
+          <Animated.FlatList
+            data={uploadedBanners}
+            keyExtractor={(item, index) => index.toString()}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ justifyContent: 'center', alignItems: 'center' }}
+            renderItem={({ item }) => (
+              <Image
+                source={{ uri: item }}
+                style={styles.bannerImage}
+              />
+            )}
+          />
+        </View>
+
+        {loading ? (
+          <ActivityIndicator size="large" color="#EB2328" style={{ marginTop: 30 }} />
+        ) : pdfList.length > 0 ? (
+          <Animated.FlatList
+  data={pdfList}
+  keyExtractor={(item) => item._id}
+  horizontal
+  showsHorizontalScrollIndicator={false}
+  snapToInterval={ITEM_SIZE}
+  decelerationRate="fast"
+  bounces={false}
+  contentContainerStyle={{
+    paddingLeft: 20, // starts from left
+    paddingRight: (width - ITEM_SIZE) / 2,
+    paddingBottom: 100,
+    justifyContent: 'center', // Make sure content is centered
+    alignItems: 'center', // Ensure content is centered horizontally
+  }}
+  onScroll={Animated.event(
+    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+    { useNativeDriver: true }
+  )}
+  scrollEventThrottle={16}
+  renderItem={({ item, index }) => {
+    const inputRange = [
+      (index - 1) * ITEM_SIZE,
+      index * ITEM_SIZE,
+      (index + 1) * ITEM_SIZE,
+    ];
+
+    const scale = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.85, 1, 0.85],
+      extrapolate: 'clamp',
+    });
+
+    const opacity = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.6, 1, 0.6],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <TouchableOpacity onPress={() => openPdfModal(item)} activeOpacity={0.8}>
+        <Animated.View
+          style={{
+            width: ITEM_SIZE,
+            marginHorizontal: SPACING / 2,
+            transform: [{ scale }],
+            opacity,
+            alignItems: 'center', // Center the image inside the Animated.View
+            justifyContent: 'center', // Ensures it remains centered
+          }}
+        >
+          <Image
+            source={require('../../assets/images/fletushka.png')}
+            style={{
+              width: ITEM_SIZE * 0.9,
+              height: 400,
+              borderRadius: 10,
+              resizeMode: 'cover',
+            }}
+          />
+          <Text style={styles.pdfName}>
+            {item.customName || item.name || item.filename || 'Untitled PDF'}
+          </Text>
+          {item.customSubtitle && (
+            <Text style={styles.pdfSubtitle}>{item.customSubtitle}</Text>
+          )}
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  }}
+/>
+
+        ) : (
+          <Text style={{ textAlign: 'center', marginTop: 30 }}>
+            {t('home.noPdfs') || 'No PDFs available.'}
+          </Text>
+        )}
+      </ScrollView>
 
       <Modal visible={isPdfModalVisible} animationType="slide">
         <View style={{ flex: 1 }}>
@@ -313,7 +310,6 @@ const styles = StyleSheet.create({
     paddingTop: 15,
     paddingBottom: 65,
     backgroundColor: '#FAFAFA',
-    height: '100%',
   },
   header: {
     marginBottom: 27,
