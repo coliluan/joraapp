@@ -513,7 +513,7 @@ cartImage: {
 
   favoriteIcon:{
     width: 40,
-    borderRadius: '100%',
+    borderRadius: 100,
     height: 40,
     backgroundColor: 'red'
   }

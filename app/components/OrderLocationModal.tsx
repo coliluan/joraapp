@@ -1,7 +1,8 @@
+import { ENDPOINTS, getApiUrl } from '@/config/api';
 import React, { useEffect, useState } from 'react';
 import { Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-interface Address {
+interface Location {
   city: string;
   street: string;
   nr: string;
@@ -10,7 +11,7 @@ interface Address {
 
 interface OrderLocationModalProps {
   visible: boolean;
-  onSave: (address: Address) => void;
+  onSave: (location: Location) => void;
   onCancel: () => void;
 }
 
@@ -19,45 +20,89 @@ const OrderLocationModal: React.FC<OrderLocationModalProps> = ({ visible, onSave
   const [street, setStreet] = useState('');
   const [nr, setNr] = useState('');
   const [phone, setPhone] = useState('');
-  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [isExistingModalVisible, setIsExistingModalVisible] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
-  const [showAddAddressModal, setShowAddAddressModal] = useState(false);
+  const [selectedAddressLocation, setSelectedAddressLocation] = useState<Location | null>(null);
+  const [showAddAddressLocationModal, setShowAddAddressLocationModal] = useState(false);
 
   useEffect(() => {
-    setShowAddAddressModal(visible);
+    setShowAddAddressLocationModal(visible);
   }, [visible]);
 
-  const handleSave = () => {
-    const newAddress: Address = { city, street, nr, phone };
-    onSave(newAddress);
-    setAddresses([...addresses, newAddress]);
+  useEffect(() => {
+  const fetchLocations = async () => {
+    try {
+      const response = await fetch(getApiUrl(ENDPOINTS.USER_ADDRESSLOCATION));
+      const data = await response.json();
+      if (response.ok) {
+        setLocations(data.locations);
+      } else {
+        console.error('Error fetching locations:', data.message);
+      }
+    } catch (error) {
+      console.error('Fetch error:', error);
+    }
+  };
 
-    // reset inputs
+  if (visible) {
+    fetchLocations();
+  }
+}, [visible]);
+
+
+  const handleSave = async () => {
+  const newAddressLocation: Location = { city, street, nr, phone };
+  console.log('Saving new address:', newAddressLocation); // Log për të verifikuar të dhënat
+
+  try {
+    const response = await fetch(getApiUrl(ENDPOINTS.USER_ADDRESSLOCATION), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(newAddressLocation),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Save Error:', errorData); // Log errorat nëse ndodhin gjatë ruajtjes
+      throw new Error('Error during address saving');
+    }
+
+    const result = await response.json();
+    console.log('Address saved:', result);
+
+    // Pas ruajtjes, thirret onSave dhe pastrohen fushat
+    onSave(newAddressLocation);
+    setLocations((prevLocations) => [...prevLocations, newAddressLocation]);
     setCity('');
     setStreet('');
     setNr('');
     setPhone('');
-
     setIsExistingModalVisible(true);
-    setShowAddAddressModal(false);
-  };
+    setShowAddAddressLocationModal(false);
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Ndodhi një gabim gjatë ruajtjes së adresës');
+  }
+};
+
 
   const handleContinue = () => {
-    if (!selectedAddress) return;
-    onSave(selectedAddress);
+    if (!selectedAddressLocation) return;
+    onSave(selectedAddressLocation);
     setIsExistingModalVisible(false);
   };
 
-  const handleAddNewAddress = () => {
-    setShowAddAddressModal(true);
+  const newAddressLocation = () => {
+    setShowAddAddressLocationModal(true);
     setIsExistingModalVisible(false);
   };
 
   return (
     <>
       {/* Modal for adding new address */}
-      <Modal transparent visible={showAddAddressModal} animationType="fade" onRequestClose={onCancel}>
+      <Modal transparent visible={showAddAddressLocationModal} animationType="fade" onRequestClose={onCancel}>
         <View style={styles.modalBackground}>
           <View style={styles.modalContainer}>
             <Text style={styles.title}>Vendosni Adresën Tuaj</Text>
@@ -67,7 +112,6 @@ const OrderLocationModal: React.FC<OrderLocationModalProps> = ({ visible, onSave
               <TextInput style={styles.numberInput} placeholder="Nr." value={nr} onChangeText={setNr} />
             </View>
             <TextInput style={styles.input} placeholder="Nr. Telefonit" value={phone} onChangeText={setPhone} />
-
             <View style={styles.locationButton}>
               <TouchableOpacity style={styles.backButton} onPress={onCancel}>
                 <Text style={styles.backButtonTitle}>Kthehu</Text>
@@ -86,29 +130,25 @@ const OrderLocationModal: React.FC<OrderLocationModalProps> = ({ visible, onSave
           <View style={styles.modalContainer}>
             <Text style={styles.title}>Adresat ekzistuese</Text>
             <View style={styles.addressList}>
-              {addresses.map((address, index) => (
+              {locations.map((location, index) => (
                 <TouchableOpacity
                   key={index}
                   style={styles.addressItem}
-                  onPress={() => setSelectedAddress(address)}
-                >
-                  <View style={[styles.radioButton, selectedAddress === address && styles.selectedRadioButton]} />
+                  onPress={() => setSelectedAddressLocation(location)}>
+                  <View style={[styles.radioButton, selectedAddressLocation === location && styles.selectedRadioButton]} />
                   <Text style={styles.addressText}>
-                    {address.city}, {address.street}
+                    {location.city}, {location.street}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
-
             <TouchableOpacity
-              style={[styles.continueButtonAddress, !selectedAddress && styles.disabledButton]}
+              style={[styles.continueButtonAddress, !selectedAddressLocation && styles.disabledButton]}
               onPress={handleContinue}
-              disabled={!selectedAddress}
-            >
+              disabled={!selectedAddressLocation}>
               <Text style={styles.continueButtonTitle}>Vazhdo blerjen</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity onPress={handleAddNewAddress}>
+            <TouchableOpacity onPress={newAddressLocation}>
               <Text style={styles.addNewAddressText}>Shto adresë të re</Text>
             </TouchableOpacity>
           </View>

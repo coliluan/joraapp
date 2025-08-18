@@ -124,6 +124,67 @@ const bannerSchema = new mongoose.Schema({
 
 const BannerModel = mongoose.model('banner', bannerSchema);
 
+const locationSchema = new mongoose.Schema({
+  city: { type: String, required: true },
+  street: { type: String, required: true },
+  nr: { type: String, required: true },
+  phone: { type: String, required: true },
+}, {
+  timestamps: true, // Shton fushat createdAt dhe updatedAt
+});
+
+// Krijimi i modelit për Location
+const Location = mongoose.model('Location', locationSchema);
+
+// API për ruajtjen e një lokacioni të ri
+app.post('/api/user/address-location', async (req, res) => {
+  try {
+    const { city, street, nr, phone } = req.body;
+
+    // Verifikoni që të dhënat janë të plota
+    if (!city || !street || !nr || !phone) {
+      return res.status(400).json({ message: 'Të gjitha fushat janë të kërkuara.' });
+    }
+
+    // Krijo një instancë të re të lokacionit
+    const newLocation = new Location({
+      city,
+      street,
+      nr,
+      phone
+    });
+
+    // Ruaj lokacionin në bazën e të dhënave
+    const savedLocation = await newLocation.save();
+
+    // Kthe një përgjigje të suksesshme
+    res.status(201).json({
+      message: 'Lokacioni u ruajt me sukses!',
+      location: savedLocation
+    });
+  } catch (err) {
+    console.error('❌ Gabim gjatë ruajtjes së lokacionit:', err);
+    res.status(500).json({ message: 'Gabim në server.' });
+  }
+});
+
+// API për marrjen e lokacioneve të përdoruesit
+// API për marrjen e lokacioneve të përdoruesit
+app.get('/api/user/address-location', async (req, res) => {
+  try {
+    const userId = req.user.id; // Ose merrni ID nga session/jwt
+    const locations = await Location.find({ user: userId }); // Filtro lokacionet për përdoruesin aktual
+    res.json({ locations });
+  } catch (err) {
+    console.error('❌ Gabim gjatë marrjes së lokacioneve:', err);
+    res.status(500).json({ message: 'Gabim në server.' });
+  }
+});
+
+
+
+
+
 // API për ngarkimin e banner-it
 app.post('/api/upload-banner', upload.single('image'), async (req, res) => {
   try {

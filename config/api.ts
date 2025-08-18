@@ -39,5 +39,5 @@ export const ENDPOINTS = {
   USER_FAVORITES: (userId: string) => `/api/users/${userId}/favorites`,
   PACKAGE_PRODUCTS: (packageId: string) => `/api/packages/${packageId}/products`,
   GET_BANNERS: '/api/banners',
-  USER_LOCATION: '/api/user/location',
+  USER_ADDRESSLOCATION: '/api/user/address-location',
 };
