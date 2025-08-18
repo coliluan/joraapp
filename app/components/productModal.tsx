@@ -121,8 +121,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   icon: {
-    width: 20,
-    height:20,    
+    width: 30,
+    height:30,    
   },
   trashImage: {   
     width: '100%',
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   button: {
-    backgroundColor: '#eb1c24',  // Blue background for buttons
+    backgroundColor: '#eb1c24', 
     paddingVertical: 10,
     paddingHorizontal: 10,
     borderRadius: 5,

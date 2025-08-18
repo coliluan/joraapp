@@ -1,6 +1,6 @@
+import { useRouter } from 'expo-router'; // Make sure you are using expo-router's useRouter
 import React, { useEffect, useState } from 'react';
 import {
-  Dimensions,
   Image,
   ScrollView,
   StyleSheet,
@@ -11,11 +11,11 @@ import {
 import { ENDPOINTS, getApiUrl } from '../../config/api';
 import { useCartStore } from '../store/cartStore';
 
-const windowHeight = Dimensions.get('window').height;
 
 const Store = () => {
   const { cart, addToCart } = useCartStore(state => state);
   const [products, setProducts] = useState<any[]>([]);
+  const router = useRouter();  // Initialize router from expo-router
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -66,7 +66,6 @@ const Store = () => {
                 source={{ uri: item.image ? getApiUrl(item.image) : 'https://example.com/default-image.png' }}
                 style={styles.productImage}
               />
-
               <View style={styles.productInfo}>
                 <View>
                   <Text style={styles.title}>{item.title}</Text>
@@ -106,8 +105,11 @@ const Store = () => {
         <Text style={styles.totalText}>
           Totali Gjithsej: {total.toFixed(2)} €
         </Text>
-        <TouchableOpacity style={styles.buttonContainer}>
-          <Text style={styles.buttonContainertext}>Blej</Text>
+        <TouchableOpacity 
+          style={styles.buttonContainer} 
+          onPress={() => router.push('/components/payment')}
+        >
+          <Text style={styles.buttonContainerText}>Blej</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -225,16 +227,16 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   buttonContainer: {
-    backgroundColor:'red',
+    backgroundColor: 'red',
     width: 90,
     height: 40,
     borderRadius: 10,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
-  buttonContainertext: {
+  buttonContainerText: {
     color: 'white',
-    fontSize: 18
+    fontSize: 18,
   },
 });
 

@@ -173,6 +173,19 @@ export default function RootLayout() {
         }}
         name="components/store"
       />
+      <Stack.Screen
+        options={{
+          title: 'payment method',
+          headerShown: true,
+          headerTitleAlign: 'center',
+          headerTintColor: '#171717',
+          headerTitleStyle: { fontWeight: '500' },
+          gestureEnabled: true,
+          headerBackVisible: false,
+          headerBackTitle: '',
+        }}
+        name="components/payment"
+      />
     </Stack>
     </LanguageProvider>
     

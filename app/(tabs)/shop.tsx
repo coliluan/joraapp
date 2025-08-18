@@ -1,18 +1,11 @@
 import { globalStyles } from '@/assets/globalStyles';
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { Card, Text } from 'react-native-paper';
+import { Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Card } from 'react-native-paper';
 import { ENDPOINTS, getApiUrl } from '../../config/api';
 import LoginModal from '../components/loginModal';
+import OrderLocationModal from '../components/OrderLocationModal';
 import ProductModal from '../components/productModal';
 import { useCartStore } from '../store/cartStore';
 import { useFavoriteStore } from '../store/favoritesStore';
@@ -21,16 +14,17 @@ import { useUserStore } from '../store/useUserStore';
 const Shop = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
-  const [modalVisible, setModalVisible] = useState(false);
+  // const [modalVisible, setModalVisible] = useState(true);  // Set modalVisible to true by default
+  const [orderLocationVisible, setOrderLocationVisible] = useState(true); // hapet default kur hyjmë në shop
+  const [productModalVisible, setProductModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Te gjitha');
   const { user, isLoggedIn, loadUserFromStorage } = useUserStore();
   const [quantities, setQuantities] = useState<{ [productId: string]: number }>({});
-  const { cart, addToCart } = useCartStore(state => state); 
+  const { cart, addToCart } = useCartStore(state => state);
   const loadFavorites = useFavoriteStore(state => state.loadFavorites);
-
-  // Merr favorite global dhe funksion toggle nga zustand store
+  const [city, setCity] = useState('');
   const favorites = useFavoriteStore(state => state.favorites);
   const toggleFavorite = useFavoriteStore(state => state.toggleFavorite);
 
@@ -62,7 +56,6 @@ const Shop = () => {
     fetchProducts();
   }, []);
 
-  // Sync quantities me cart store
   useEffect(() => {
     const initialQuantities: { [productId: string]: number } = {};
     cart.forEach(item => {
@@ -70,6 +63,15 @@ const Shop = () => {
     });
     setQuantities(initialQuantities);
   }, [cart]);
+
+  const handleSave = (city: string) => {
+    setCity(city);
+    setOrderLocationVisible(false); // mbyll OrderLocationModal pas zgjedhjes së qytetit
+  };
+
+  const handleCancel = () => {
+    setOrderLocationVisible(false); // Close modal on cancel
+  };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -100,46 +102,50 @@ const Shop = () => {
   };
 
   const handleProductClick = (product: any) => {
-  setSelectedProduct(product);
-  setModalVisible(true);
-};
-
-  const closeModal = () => {
-    setModalVisible(false);
+    setSelectedProduct(product);
+    setProductModalVisible(true);
+  };
+  const closeProductModal = () => {
+    setSelectedProduct(null);
+    setProductModalVisible(false);
   };
 
   const changeQuantity = (productId: string, type: 'increase' | 'decrease') => {
-  const currentQuantity = quantities[productId] ?? 0;
-  const newQuantity = type === 'increase' ? currentQuantity + 1 : Math.max(0, currentQuantity - 1);
+    const currentQuantity = quantities[productId] ?? 0;
+    const newQuantity = type === 'increase' ? currentQuantity + 1 : Math.max(0, currentQuantity - 1);
 
-  setQuantities(prev => ({
-    ...prev,
-    [productId]: newQuantity,
-  }));
+    setQuantities(prev => ({
+      ...prev,
+      [productId]: newQuantity,
+    }));
 
-  // ✅ Update Zustand state separately (after setting quantities)
-  addToCart(productId, newQuantity);
-};
+    addToCart(productId, newQuantity);
+  };
 
   if (user?.isGuest || !isLoggedIn) {
     return <LoginModal />;
   }
 
   const totalPrice = useMemo(() => {
-  let total = 0;
-  for (const productId in quantities) {
-    const quantity = quantities[productId];
-    const product = products.find(p => p._id === productId);
-    if (product && quantity > 0) {
-      total += quantity * parseFloat(product.price);
+    let total = 0;
+    for (const productId in quantities) {
+      const quantity = quantities[productId];
+      const product = products.find(p => p._id === productId);
+      if (product && quantity > 0) {
+        total += quantity * parseFloat(product.price);
+      }
     }
-  }
-  return total.toFixed(2);
-}, [quantities, products]);
-
+    return total.toFixed(2);
+  }, [quantities, products]);
 
   return (
     <SafeAreaView>
+      <OrderLocationModal
+        visible={orderLocationVisible}
+        onSave={handleSave}
+        onCancel={handleCancel}
+      />
+
       <ScrollView style={styles.container}>
         {/* Notification icon */}
         <View style={globalStyles.notification}>
@@ -154,15 +160,6 @@ const Shop = () => {
             <Image source={require('../../assets/images/notification.png')} />
           </TouchableOpacity>
         </View>
-        <View style={globalStyles.notification}>
-          <TouchableOpacity
-            onPress={() => router.push('../components/favorite_product')}
-          >
-            <Image style={styles.favoriteIcon} source={require('../../assets/images/favorite-icon.png')} />
-          </TouchableOpacity>
-        </View>
-        
-
         {/* Search */}
         <TextInput
           style={styles.searchInput}
@@ -171,13 +168,15 @@ const Shop = () => {
           onChangeText={handleSearch}
         />
 
-        {/* Sort/Filter */}
         <View style={styles.sortFilterContainer}>
           <TouchableOpacity style={styles.button}>
             <Text>Sort</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.button}>
-            <Text>Filter</Text>
+          
+          <TouchableOpacity
+            onPress={() => router.push('../components/favorite_product')}
+          >
+            <Image style={styles.favoriteIcon} source={require('../../assets/images/favorite-icon.png')} />
           </TouchableOpacity>
         </View>
 
@@ -210,7 +209,7 @@ const Shop = () => {
               <TouchableOpacity
                 key={product._id}
                 style={styles.card}
-                onPress={() => handleProductClick(product)}  // Set selected product on click
+                onPress={() => handleProductClick(product)} 
               >
                 <Card>
                   <Card.Cover
@@ -309,9 +308,9 @@ const Shop = () => {
 
       {selectedProduct && (
         <ProductModal 
-          visible={modalVisible} 
-          packageId={selectedProduct._id}  // Pass the correct packageId from selectedProduct
-          onClose={closeModal} 
+          visible={productModalVisible} 
+          packageId={selectedProduct._id}  
+          onClose={closeProductModal} 
         />
       )}
     </SafeAreaView>
@@ -513,9 +512,9 @@ cartImage: {
 },
 
   favoriteIcon:{
-    width: 50,
+    width: 40,
     borderRadius: '100%',
-    height: 50,
+    height: 40,
     backgroundColor: 'red'
   }
 });
