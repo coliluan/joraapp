@@ -51,6 +51,13 @@ const Payment = () => {
     };
     fetchProducts();
 
+    // Autofill user info if available
+    if (user) {
+      if (user.firstName) setFirstName(user.firstName);
+      if (user.lastName) setLastName(user.lastName);
+      if (user.email) setEmail(user.email);
+    }
+
     // Fetch address location if user exists
     const fetchAddressLocation = async () => {
       if (user && user._id) {

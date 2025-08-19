@@ -1,4 +1,3 @@
-
 import bcrypt from 'bcrypt';
 import { Buffer } from 'buffer';
 import { createCanvas } from 'canvas';
