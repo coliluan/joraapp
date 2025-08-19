@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useIsFocused } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,6 +20,7 @@ import { WebView } from 'react-native-webview';
 import { globalStyles } from '../../assets/globalStyles';
 import { API_BASE } from '../../config/api';
 import { useUserStore } from '../store/useUserStore';
+import { useNotificationPolling } from '../useNotificationPolling';
 
 type Pdf = {
   _id: string;
@@ -56,7 +57,11 @@ const HomeScreen = () => {
       const cachedParsed: Pdf[] = cached ? JSON.parse(cached) : [];
       if (cachedParsed.length) setPdfList(cachedParsed);
 
-      const res = await fetch(`${API_BASE}/api/pdfs`);
+             const res = await fetch(`${API_BASE}/api/pdfs`);
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error(`Invalid response from ${API_BASE}/api/pdfs`);
+      }
       const data: Pdf[] = await res.json();
       const sorted = data.sort(
         (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
@@ -73,12 +78,17 @@ const HomeScreen = () => {
     }
   }, []);
 
+  // Show unseen notification count (zero if all seen)
   const fetchNotificationCount = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/notifications`);
+             const res = await fetch(`${API_BASE}/api/notifications`);
+      const contentTypeNotif = res.headers.get('content-type') || '';
+      if (!res.ok || !contentTypeNotif.includes('application/json')) {
+        throw new Error(`Invalid response from ${API_BASE}/api/notifications`);
+      }
       const data = await res.json();
       const lastSeen = parseInt(await AsyncStorage.getItem('lastSeenNotificationCount') || '0');
-      setNotificationCount(Math.max(data.length - lastSeen, 0));
+      setNotificationCount(Array.isArray(data) ? Math.max(data.length - lastSeen, 0) : 0);
     } catch (err) {
       console.error('Error fetching notifications:', err);
     }
@@ -87,10 +97,20 @@ const HomeScreen = () => {
   useEffect(() => {
     if (isFocused) {
       loadUserFromStorage();
-      fetchNotificationCount();
       fetchPdfs();
     }
-  }, [isFocused]);
+  }, [isFocused, fetchPdfs, loadUserFromStorage]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchNotificationCount();
+    }, [fetchNotificationCount])
+  );
+
+  // Poll for new notifications every 5 seconds when on home screen
+  useNotificationPolling(() => {
+    if (isFocused) fetchNotificationCount();
+  }, 5000);
 
   const openPdfModal = (pdf: Pdf) => {
     setSelectedPdf(pdf);
@@ -101,6 +121,10 @@ const HomeScreen = () => {
     const fetchBanners = async () => {
       try {
         const response = await fetch(`${API_BASE}/api/get-all-banners`);
+        const contentType = response.headers.get('content-type') || '';
+        if (!response.ok || !contentType.includes('application/json')) {
+          throw new Error(`Invalid response from ${API_BASE}/api/get-all-banners`);
+        }
         const data = await response.json();
         const urls = data.map((banner: { url: string }) => banner.url);
         setUploadedBanners(urls);
@@ -121,20 +145,24 @@ const HomeScreen = () => {
       >
         <View style={globalStyles.notification}>
           {user?.firstName ? (
-            <TouchableOpacity onPress={() => router.push('/components/notificationModal')}>
+            <TouchableOpacity
+              onPress={() => {
+                router.push('/components/notificationModal');
+              }}
+            >
               <Image source={require('../../assets/images/notification.png')} />
+{notificationCount > 0 && (
+  <View style={styles.badge}>
+    <Text style={styles.badgeText}>{notificationCount}</Text>
+  </View>
+)}
             </TouchableOpacity>
           ) : (
             <TouchableOpacity onPress={() => router.push('../(auth)/logIn')}>
               <Image style={styles.logo} source={require('../../assets/images/logs.png')} />
             </TouchableOpacity>
           )}
-          {notificationCount > 0 && user?.firstName && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{notificationCount}</Text>
-            </View>
-          )}
-        </View>
+  </View>
 
         <View style={styles.header}>
           <Text style={globalStyles.title}>

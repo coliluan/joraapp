@@ -6,12 +6,14 @@ export const API_CONFIG = {
   PRODUCTION: 'https://joraapp.onrender.com',
 };
 
-
+import { Platform } from 'react-native';
 
 // Përdor URL lokale nëse jemi në development mode, përndryshe përdor production
-// export const API_BASE = __DEV__ ? API_CONFIG.LOCAL : API_CONFIG.PRODUCTION;
-export const API_BASE = API_CONFIG.LOCAL;
-
+// Android emulator përdor 10.0.2.2 për të arritur localhost-in e kompjuterit
+const ANDROID_LOCAL = 'http://10.0.2.2:8000';
+export const API_BASE = __DEV__
+  ? (Platform.OS === 'android' ? ANDROID_LOCAL : API_CONFIG.LOCAL)
+  : API_CONFIG.PRODUCTION;
 
 // Helper function për të marrë URL-në e plotë për një endpoint
 export const getApiUrl = (endpoint: string) => `${API_BASE}${endpoint}`;
@@ -38,6 +40,7 @@ export const ENDPOINTS = {
   PRODUCTS: '/api/products',
   USER_FAVORITES: (userId: string) => `/api/users/${userId}/favorites`,
   PACKAGE_PRODUCTS: (packageId: string) => `/api/packages/${packageId}/products`,
-  GET_BANNERS: '/api/banners',
+  GET_BANNERS: '/api/get-all-banners',
   USER_ADDRESSLOCATION: '/api/user/address-location',
+  
 };

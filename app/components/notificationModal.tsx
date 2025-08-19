@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { Image, Linking, ScrollView, StyleSheet, Text } from 'react-native';
 import { Card, IconButton } from 'react-native-paper';
-import { API_BASE } from '../../config/api';
+import { API_BASE, API_CONFIG } from '../../config/api';
 
 interface Notification {
   title: string;
@@ -10,17 +10,42 @@ interface Notification {
   sentAt: string;
 }
 
+const fetchJsonWithFallback = async (path: string) => {
+  try {
+    const res = await fetch(`${API_BASE}${path}`);
+    const contentType = res.headers.get('content-type') || '';
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`HTTP ${res.status}: ${text}`);
+    }
+    if (!contentType.includes('application/json')) {
+      const text = await res.text();
+      throw new Error(`Non-JSON response: ${text.slice(0, 100)}`);
+    }
+    return res.json();
+  } catch (e) {
+    // Fallback to production
+    const resProd = await fetch(`${API_CONFIG.PRODUCTION}${path}`);
+    const contentType = resProd.headers.get('content-type') || '';
+    if (!resProd.ok || !contentType.includes('application/json')) {
+      const text = await resProd.text();
+      throw new Error(`Fallback failed: HTTP ${resProd.status} ${text.slice(0, 120)}`);
+    }
+    return resProd.json();
+  }
+};
+
 const NotificationModal = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
     const loadNotifications = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/notifications`);
-        const data = await response.json();
+        const data = await fetchJsonWithFallback('/api/notifications');
 
         if (Array.isArray(data)) {
           setNotifications(data);
+          // Mark all as seen by saving count
           await AsyncStorage.setItem('lastSeenNotificationCount', data.length.toString());
         } else {
           console.warn('Data nuk është një array:', data);

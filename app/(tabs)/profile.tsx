@@ -74,15 +74,22 @@ const ProfileScreen = () => {
     }
   };
 
+  const [shouldRedirect, setShouldRedirect] = React.useState(false);
   const handleLogOutUser = async () => {
     try {
       await logout();
       Alert.alert('Sukses', 'U çkyçët me sukses.');
-      router.replace('/');
+      setShouldRedirect(true);
     } catch (e) {
       Alert.alert('Gabim', 'Ndodhi një gabim gjatë çkyçjes.');
     }
   };
+
+  useEffect(() => {
+    if (shouldRedirect) {
+      router.replace('/');
+    }
+  }, [shouldRedirect, router]);
 
   const capitalizeFirstLetter = (str: string) =>
     str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
@@ -109,87 +116,92 @@ const ProfileScreen = () => {
     },
   ] as const;
 
-  if (!isLoggedIn || !user || user?.isGuest) {
-    return <LoginModal />;
-  }
+
+  // Always call all hooks before any return. Render LoginModal conditionally below.
 
   return (
     <PaperProvider>
       <View style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.innerContent}>
-            <View style={globalStyles.notification}>
-              <TouchableOpacity onPress={() => router.push('/components/notificationModal')}>
-                <Image source={require('../../assets/images/notification.png')} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.header}>
-              <TouchableOpacity onPress={pickImage}>
-                <Image
-                  source={
-                    user.photo
-                      ? { uri: user.photo }
-                      : require('../../assets/images/unknown-profile.jpg')
-                  }
-                  style={styles.avatar}
-                />
-              </TouchableOpacity>
-
-              <View style={styles.userInfo}>
-                <Text style={styles.name}>{capitalizeFirstLetter(user.firstName)}</Text>
-                <Text style={globalStyles.phone}>{user.number || ''}</Text>
-              </View>
-            </View>
-
-            <View style={styles.profileSection}>
-              {options.map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.option}
-                  onPress={() => router.push({ pathname: item.screen })}
-                >
-                  <View style={styles.image}>
-                    <Image source={item.icon} style={styles.icon} />
-                  </View>
-                  <Text style={styles.optionText}>{item.label}</Text>
-                </TouchableOpacity>
-              ))}
-
-              <TouchableOpacity style={styles.option} onPress={showDialog}>
-                <View style={styles.image}>
-                  <Image source={require('../../assets/images/trash.png')} style={styles.icon} />
+        {(!isLoggedIn || !user || user?.isGuest) ? (
+          <LoginModal />
+        ) : (
+          <>
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+              <View style={styles.innerContent}>
+                <View style={globalStyles.notification}>
+                  <TouchableOpacity onPress={() => router.push('/components/notificationModal')}>
+                    <Image source={require('../../assets/images/notification.png')} />
+                  </TouchableOpacity>
                 </View>
-                <Text style={styles.optionText}>{t('logout')}</Text>
-              </TouchableOpacity>
-            </View>
 
-            <View>
-              <Text style={styles.helpText}>{t('profile.help')}</Text>
-              <Text style={styles.support} onPress={handleEmailPress}>
-                support@jora.center
-              </Text>
-            </View>
-          </View>
-        </ScrollView>
+                <View style={styles.header}>
+                  <TouchableOpacity onPress={pickImage}>
+                    <Image
+                      source={
+                        user.photo
+                          ? { uri: user.photo }
+                          : require('../../assets/images/unknown-profile.jpg')
+                      }
+                      style={styles.avatar}
+                    />
+                  </TouchableOpacity>
 
-        <Portal>
-          <Dialog style={globalStyles.modal} visible={visible} onDismiss={hideDialog}>
-            <Dialog.Icon icon="alert" />
-            <Dialog.Title style={globalStyles.dialogTitle}>{t('modalRemove')}</Dialog.Title>
-            <Dialog.Content>
-              <Text style={globalStyles.dialogText}>{t('titleRemoveModal')}</Text>
-            </Dialog.Content>
-            <Dialog.Actions>
-              <Button style={globalStyles.dialogButton} onPress={hideDialog}>
-                {t('no')}
-              </Button>
-              <Button style={globalStyles.buttonDialog} onPress={handleLogOutUser}>
-                {t('yes')}
-              </Button>
-            </Dialog.Actions>
-          </Dialog>
-        </Portal>
+                  <View style={styles.userInfo}>
+                    <Text style={styles.name}>{capitalizeFirstLetter(user.firstName)}</Text>
+                    <Text style={globalStyles.phone}>{user.number || ''}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.profileSection}>
+                  {options.map((item, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.option}
+                      onPress={() => router.push({ pathname: item.screen })}
+                    >
+                      <View style={styles.image}>
+                        <Image source={item.icon} style={styles.icon} />
+                      </View>
+                      <Text style={styles.optionText}>{item.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+
+                  <TouchableOpacity style={styles.option} onPress={showDialog}>
+                    <View style={styles.image}>
+                      <Image source={require('../../assets/images/trash.png')} style={styles.icon} />
+                    </View>
+                    <Text style={styles.optionText}>{t('logout')}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View>
+                  <Text style={styles.helpText}>{t('profile.help')}</Text>
+                  <Text style={styles.support} onPress={handleEmailPress}>
+                    support@jora.center
+                  </Text>
+                </View>
+              </View>
+            </ScrollView>
+
+            <Portal>
+              <Dialog style={globalStyles.modal} visible={visible} onDismiss={hideDialog}>
+                <Dialog.Icon icon="alert" />
+                <Dialog.Title style={globalStyles.dialogTitle}>{t('modalRemove')}</Dialog.Title>
+                <Dialog.Content>
+                  <Text style={globalStyles.dialogText}>{t('titleRemoveModal')}</Text>
+                </Dialog.Content>
+                <Dialog.Actions>
+                  <Button style={globalStyles.dialogButton} onPress={hideDialog}>
+                    {t('no')}
+                  </Button>
+                  <Button style={globalStyles.buttonDialog} onPress={handleLogOutUser}>
+                    {t('yes')}
+                  </Button>
+                </Dialog.Actions>
+              </Dialog>
+            </Portal>
+          </>
+        )}
       </View>
     </PaperProvider>
   );

@@ -1,6 +1,6 @@
-import { ENDPOINTS, getApiUrl } from '@/config/api';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ENDPOINTS, getApiUrl } from '../../config/api';
 
 interface Location {
   city: string;
@@ -11,11 +11,12 @@ interface Location {
 
 interface OrderLocationModalProps {
   visible: boolean;
+  userId: string; // Add userId prop to pass the userId dynamically
   onSave: (location: Location) => void;
   onCancel: () => void;
 }
 
-const OrderLocationModal: React.FC<OrderLocationModalProps> = ({ visible, onSave, onCancel }) => {
+const OrderLocationModal: React.FC<OrderLocationModalProps> = ({ visible, userId, onSave, onCancel }) => {
   const [city, setCity] = useState('');
   const [street, setStreet] = useState('');
   const [nr, setNr] = useState('');
@@ -25,73 +26,66 @@ const OrderLocationModal: React.FC<OrderLocationModalProps> = ({ visible, onSave
   const [selectedAddressLocation, setSelectedAddressLocation] = useState<Location | null>(null);
   const [showAddAddressLocationModal, setShowAddAddressLocationModal] = useState(false);
 
-  useEffect(() => {
-    setShowAddAddressLocationModal(visible);
-  }, [visible]);
-
-  useEffect(() => {
-  const fetchLocations = async () => {
+  // Fetch locations from backend
+  const fetchLocations = useCallback(async () => {
     try {
-      const response = await fetch(getApiUrl(ENDPOINTS.USER_ADDRESSLOCATION));
-      const data = await response.json();
-      if (response.ok) {
-        setLocations(data.locations);
-      } else {
-        console.error('Error fetching locations:', data.message);
+      const res = await fetch(`${getApiUrl(ENDPOINTS.USER_ADDRESSLOCATION)}?userId=${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLocations(data.locations || []);
+        if (data.locations && data.locations.length > 0) {
+          setIsExistingModalVisible(true);
+          setShowAddAddressLocationModal(false);
+          setSelectedAddressLocation(null); // force user to select
+        } else {
+          setIsExistingModalVisible(false);
+          setShowAddAddressLocationModal(true);
+        }
       }
-    } catch (error) {
-      console.error('Fetch error:', error);
+    } catch {
+      setLocations([]);
+      setIsExistingModalVisible(false);
+      setShowAddAddressLocationModal(true);
     }
-  };
+  }, [userId]);
 
-  if (visible) {
-    fetchLocations();
-  }
-}, [visible]);
+  // Fetch existing locations when the modal is opened
+  useEffect(() => {
+    if (visible && userId) {
+      fetchLocations();
+    }
+  }, [visible, userId, fetchLocations]);
+
+  // Always show existing address modal if there are locations
+  useEffect(() => {
+    if (locations.length > 0) {
+      setIsExistingModalVisible(true);
+      setShowAddAddressLocationModal(false);
+    }
+  }, [locations]);
 
 
   const handleSave = async () => {
-  const newAddressLocation: Location = { city, street, nr, phone };
-  console.log('Saving new address:', newAddressLocation); // Log për të verifikuar të dhënat
-
-  try {
-    const response = await fetch(getApiUrl(ENDPOINTS.USER_ADDRESSLOCATION), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(newAddressLocation),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Save Error:', errorData); // Log errorat nëse ndodhin gjatë ruajtjes
-      throw new Error('Error during address saving');
-    }
-
-    const result = await response.json();
-    console.log('Address saved:', result);
-
-    // Pas ruajtjes, thirret onSave dhe pastrohen fushat
-    onSave(newAddressLocation);
-    setLocations((prevLocations) => [...prevLocations, newAddressLocation]);
-    setCity('');
-    setStreet('');
-    setNr('');
-    setPhone('');
-    setIsExistingModalVisible(true);
-    setShowAddAddressLocationModal(false);
-  } catch (error) {
-    console.error('Error:', error);
-    alert('Ndodhi një gabim gjatë ruajtjes së adresës');
-  }
-};
-
+    if (!city || !street || !nr || !phone) return;
+    try {
+      const res = await fetch(getApiUrl(ENDPOINTS.USER_ADDRESSLOCATION), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, city, street, nr, phone })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLocations(data.locations || []);
+        setSelectedAddressLocation(data.locations[data.locations.length - 1]); // preselect new
+        setCity(''); setStreet(''); setNr(''); setPhone('');
+      }
+    } catch {}
+  };
 
   const handleContinue = () => {
     if (!selectedAddressLocation) return;
-    onSave(selectedAddressLocation);
     setIsExistingModalVisible(false);
+    onSave(selectedAddressLocation);
   };
 
   const newAddressLocation = () => {
@@ -101,8 +95,12 @@ const OrderLocationModal: React.FC<OrderLocationModalProps> = ({ visible, onSave
 
   return (
     <>
-      {/* Modal for adding new address */}
-      <Modal transparent visible={showAddAddressLocationModal} animationType="fade" onRequestClose={onCancel}>
+      <Modal
+        transparent
+        visible={showAddAddressLocationModal}
+        animationType="fade"
+        onRequestClose={() => {}} // block close
+      >
         <View style={styles.modalBackground}>
           <View style={styles.modalContainer}>
             <Text style={styles.title}>Vendosni Adresën Tuaj</Text>
@@ -113,9 +111,7 @@ const OrderLocationModal: React.FC<OrderLocationModalProps> = ({ visible, onSave
             </View>
             <TextInput style={styles.input} placeholder="Nr. Telefonit" value={phone} onChangeText={setPhone} />
             <View style={styles.locationButton}>
-              <TouchableOpacity style={styles.backButton} onPress={onCancel}>
-                <Text style={styles.backButtonTitle}>Kthehu</Text>
-              </TouchableOpacity>
+              {/* Remove Kthehu button to prevent closing */}
               <TouchableOpacity style={styles.continueButton} onPress={handleSave}>
                 <Text style={styles.continueButtonTitle}>Vazhdo</Text>
               </TouchableOpacity>
@@ -125,7 +121,12 @@ const OrderLocationModal: React.FC<OrderLocationModalProps> = ({ visible, onSave
       </Modal>
 
       {/* Modal for existing addresses */}
-      <Modal transparent visible={isExistingModalVisible} animationType="fade" onRequestClose={() => setIsExistingModalVisible(false)}>
+      <Modal
+        transparent
+        visible={isExistingModalVisible}
+        animationType="fade"
+        onRequestClose={() => {}} // block close
+      >
         <View style={styles.modalBackground}>
           <View style={styles.modalContainer}>
             <Text style={styles.title}>Adresat ekzistuese</Text>

@@ -1,21 +1,148 @@
+
 import bcrypt from 'bcrypt';
-import bodyParser from 'body-parser';
+import { Buffer } from 'buffer';
 import { createCanvas } from 'canvas';
-import cors from 'cors';
 import dotenv from 'dotenv';
 import { Expo } from 'expo-server-sdk';
-import express from 'express';
 import JsBarcode from 'jsbarcode';
 import mongoose from 'mongoose';
-import morgan from 'morgan';
 import multer from 'multer';
 import fetch from 'node-fetch';
-import NotificationModel from '../backend/models/Notification.model.js';
-global.Buffer = global.Buffer || require('buffer').Buffer;
+import NotificationModel from './models/Notification.model.js';
+// Added missing imports
+import express from 'express';
+import cors from 'cors';
+import bodyParser from 'body-parser';
+import morgan from 'morgan';
+import OrderModel from './models/Order.model.js';
+
+global.Buffer = global.Buffer || Buffer;
+
+// Initialize Express app
+const app = express();
+
+// POST: Create a new order
+app.post('/api/orders', async (req, res) => {
+  try {
+    const {
+      userId,
+      firstName: bodyFirstName = '',
+      lastName: bodyLastName = '',
+      email: bodyEmail = '',
+      address = '',
+      nr = '',
+      phone = '',
+      city = '',
+      selectedPayment = '',
+      cart = [],
+    } = req.body || {};
+
+    // Load user to backfill missing fields
+    let user = null;
+    try {
+      if (userId) user = await UserModel.findById(userId);
+    } catch {}
+
+    // Fill name/email from user if missing
+    const finalFirstName = bodyFirstName || user?.firstName || '';
+    const finalLastName = bodyLastName || user?.lastName || '';
+    const finalEmail = bodyEmail || user?.email || '';
+
+    // If address info missing try to use last saved location
+    let finalAddress = address;
+    let finalCity = city;
+    let finalNr = nr;
+    let finalPhone = phone;
+
+    if (user && (!address || !city || !nr || !phone)) {
+      if (Array.isArray(user.locations) && user.locations.length > 0) {
+        const lastLocation = user.locations[user.locations.length - 1];
+        finalAddress = finalAddress || lastLocation.street || '';
+        finalCity = finalCity || lastLocation.city || '';
+        finalNr = finalNr || lastLocation.nr || '';
+        finalPhone = finalPhone || lastLocation.phone || '';
+      }
+    }
+
+    // Enrich cart items with title/price if missing by looking up products
+    const normalizedCart = Array.isArray(cart) ? await Promise.all(cart.map(async (it) => {
+      const quantity = Number(it?.quantity) || 0;
+      let price = Number(it?.price);
+      let title = it?.title ? String(it.title) : '';
+
+      if ((!title || !Number.isFinite(price)) && it?.productId) {
+        try {
+          let product = await ProductModel.findById(it.productId);
+          if (!product) {
+            product = await ProductPackageModel.findById(it.productId);
+          }
+          if (product) {
+            title = title || String(product.title || '');
+            price = Number.isFinite(price) ? price : Number(product.price) || 0;
+          }
+        } catch {}
+      }
+
+      price = Number.isFinite(price) ? price : 0;
+      const lineTotal = quantity * price;
+
+      return {
+        productId: String(it?.productId || ''),
+        title,
+        quantity,
+        price,
+        lineTotal,
+      };
+    })) : [];
+
+    const orderTotal = normalizedCart.reduce((sum, it) => sum + it.lineTotal, 0);
+
+    const order = await OrderModel.create({
+      userId: userId || undefined,
+      firstName: finalFirstName,
+      lastName: finalLastName,
+      email: finalEmail,
+      address: finalAddress,
+      nr: finalNr,
+      phone: finalPhone,
+      city: finalCity,
+      selectedPayment,
+      cart: normalizedCart,
+      orderTotal,
+    });
+
+    res.status(201).json({ message: 'Order created successfully', order });
+  } catch (err) {
+    console.error('❌ Error creating order:', err);
+    res.status(500).json({ message: 'Gabim gjatë ruajtjes së porosisë.' });
+  }
+});
+
+// GET: List all orders (most recent first)
+app.get('/api/orders', async (req, res) => {
+  try {
+    const orders = await OrderModel.find().sort({ createdAt: -1 });
+    res.status(200).json({ orders });
+  } catch (err) {
+    console.error('❌ Error fetching orders:', err);
+    res.status(500).json({ message: 'Gabim gjatë marrjes së porosive.' });
+  }
+});
+
+// GET: Single order by id
+app.get('/api/orders/:id', async (req, res) => {
+  try {
+    const order = await OrderModel.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Porosia nuk u gjet.' });
+    res.status(200).json({ order });
+  } catch (err) {
+    console.error('❌ Error fetching order:', err);
+    res.status(500).json({ message: 'Gabim në server.' });
+  }
+});
 
 dotenv.config();
 
-const app = express();
 const PORT = process.env.PORT || 8000;
 const MONGO_URL = process.env.MONGO_URL || 'mongodb://localhost:27017/dbconnect';
 
@@ -69,7 +196,14 @@ const userSchema = new mongoose.Schema({
   type: [String],
   default: [],
 },
-
+locations: [           // Lokacionet e përdoruesit
+    {
+      city: String,
+      street: String,
+      nr: String,
+      phone: String,
+    }
+  ]
 }, { timestamps: true });
 
 const UserModel = mongoose.model('users', userSchema);
@@ -124,66 +258,42 @@ const bannerSchema = new mongoose.Schema({
 
 const BannerModel = mongoose.model('banner', bannerSchema);
 
-const locationSchema = new mongoose.Schema({
-  city: { type: String, required: true },
-  street: { type: String, required: true },
-  nr: { type: String, required: true },
-  phone: { type: String, required: true },
-}, {
-  timestamps: true, // Shton fushat createdAt dhe updatedAt
-});
 
-// Krijimi i modelit për Location
-const Location = mongoose.model('Location', locationSchema);
+// Nuk nevojitet model i veçantë për Location, përdoret si subdocument te UserModel
 
-// API për ruajtjen e një lokacioni të ri
+// POST: Add a new address location for a user
 app.post('/api/user/address-location', async (req, res) => {
+  const { userId, city, street, nr, phone } = req.body;
+  if (!userId || !city || !street || !nr || !phone) {
+    return res.status(400).json({ message: 'Të gjitha fushat janë të detyrueshme.' });
+  }
   try {
-    const { city, street, nr, phone } = req.body;
-
-    // Verifikoni që të dhënat janë të plota
-    if (!city || !street || !nr || !phone) {
-      return res.status(400).json({ message: 'Të gjitha fushat janë të kërkuara.' });
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Përdoruesi nuk u gjet.' });
     }
-
-    // Krijo një instancë të re të lokacionit
-    const newLocation = new Location({
-      city,
-      street,
-      nr,
-      phone
-    });
-
-    // Ruaj lokacionin në bazën e të dhënave
-    const savedLocation = await newLocation.save();
-
-    // Kthe një përgjigje të suksesshme
-    res.status(201).json({
-      message: 'Lokacioni u ruajt me sukses!',
-      location: savedLocation
-    });
+    user.locations.push({ city, street, nr, phone });
+    await user.save();
+    return res.status(201).json({ message: 'Adresa u shtua me sukses.', locations: user.locations });
   } catch (err) {
-    console.error('❌ Gabim gjatë ruajtjes së lokacionit:', err);
-    res.status(500).json({ message: 'Gabim në server.' });
+    return res.status(500).json({ message: 'Gabim në server.' });
   }
 });
 
-// API për marrjen e lokacioneve të përdoruesit
-// API për marrjen e lokacioneve të përdoruesit
+// GET: Retrieve all address locations for a user
 app.get('/api/user/address-location', async (req, res) => {
+  const { userId } = req.query;
+  if (!userId) return res.status(400).json({ message: 'userId mungon.' });
   try {
-    const userId = req.user.id; // Ose merrni ID nga session/jwt
-    const locations = await Location.find({ user: userId }); // Filtro lokacionet për përdoruesin aktual
-    res.json({ locations });
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Përdoruesi nuk u gjet.' });
+    }
+    return res.json({ locations: user.locations });
   } catch (err) {
-    console.error('❌ Gabim gjatë marrjes së lokacioneve:', err);
-    res.status(500).json({ message: 'Gabim në server.' });
+    return res.status(500).json({ message: 'Gabim në server.' });
   }
 });
-
-
-
-
 
 // API për ngarkimin e banner-it
 app.post('/api/upload-banner', upload.single('image'), async (req, res) => {
@@ -1065,22 +1175,24 @@ app.delete('/api/user/:id', async (req, res) => {
 
 app.get('/api/barcode/:code', (req, res) => {
   const code = req.params.code;
-  
-  if (!/^\d{12}$/.test(code)) {  // Validate that it's a 12-digit number
-    return res.status(400).send('Kodi duhet të ketë saktësisht 12 numra.');
+
+  // Accept 12 or 13 digits (EAN-13). For 12, JsBarcode will compute check digit.
+  if (!/^\d{12,13}$/.test(code)) {
+    return res.status(400).send('Kodi duhet të ketë 12 ose 13 numra.');
   }
 
-  const canvas = createCanvas();
+  const canvas = createCanvas(400, 140);
   try {
     JsBarcode(canvas, code, {
       format: 'EAN13',
       displayValue: true,
       width: 2,
       height: 100,
+      margin: 10,
     });
 
     res.set('Content-Type', 'image/png');
-    canvas.createPNGStream().pipe(res); // Serve the barcode image as PNG
+    canvas.createPNGStream().pipe(res);
   } catch (err) {
     console.error('❌ Error generating barcode:', err);
     res.status(500).send('Gabim gjatë gjenerimit të barkodit.');

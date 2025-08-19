@@ -144,6 +144,7 @@ const Shop = () => {
         visible={orderLocationVisible}
         onSave={handleSave}
         onCancel={handleCancel}
+        userId={user?._id ?? ''}
       />
 
       <ScrollView style={styles.container}>
