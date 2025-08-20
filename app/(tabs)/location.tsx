@@ -1,47 +1,36 @@
 import { globalStyles } from '@/assets/globalStyles';
-import { router } from 'expo-router';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useUserStore } from '../store/useUserStore';
 
 const App = () => {
-const user = useUserStore(state => state.user);
 
   const { t } = useTranslation();
   
   const locations = [
-  {
-    title: 'Jora Center - Komoran',
-    address: t('location.highway'),
-    image: require('../../assets/images/location2.png'),
-    mapUrl: 'https://maps.app.goo.gl/Dz8LTsW15ZDhdQmc8',
-  },
-  {
-    title: 'Jora Center - Sllatinë',
-    address: t('location.highway1'),
-    image: require('../../assets/images/location1.png'), 
-    mapUrl: 'https://maps.app.goo.gl/CFp3ecmjoWXvSZnY7',
-  },
-];
+    {
+      title: 'Jora Center - Komoran',
+      address: t('location.highway'),
+      image: require('../../assets/images/location2.png'),
+      mapUrl: 'https://maps.app.goo.gl/Dz8LTsW15ZDhdQmc8',
+    },
+    {
+      title: 'Jora Center - Sllatinë',
+      address: t('location.highway1'),
+      image: require('../../assets/images/location1.png'), 
+      mapUrl: 'https://maps.app.goo.gl/CFp3ecmjoWXvSZnY7',
+    },
+  ];
   
   return (
     <ScrollView style={styles.container}>
-      <View style={globalStyles.notification}>
-        <TouchableOpacity 
-        onPress={() => {
-           if (!user?.isGuest && user?.firstName) {
-             router.push('/components/notificationModal');
-           }
-         }}
-         disabled={user?.isGuest || !user?.firstName}>
-          <Image source={require('../../assets/images/notification.png')} />
-        </TouchableOpacity>
-      </View>
 
       <Text style={styles.header}>{t('location.store')}</Text>
       {locations.map((location, index) => (
-        <View key={index} style={styles.card}>
+        <View 
+          key={index} 
+          style={[styles.card, index === 1 && styles.secondCard]}
+        >
           <Image source={location.image} style={styles.image} resizeMode="cover" />
           <View style={styles.cardContent}>
             <Text style={globalStyles.title}>{location.title}</Text>
@@ -62,21 +51,24 @@ const user = useUserStore(state => state.user);
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 15,
-    paddingVertical: 15,
+    paddingVertical: 30,
     backgroundColor: '#FAFAFA',
   },
   header: {
     fontSize: 18,
     fontWeight: '500',
     marginBottom: 30,
-    color: '#171717'
+    color: '#171717',
   },
   card: {
     backgroundColor: '#fff',
     overflow: 'hidden',
     padding: 15,
     height: 270,
-    marginBottom: 30
+    marginBottom: 15,
+  },
+  secondCard: {
+    marginBottom: 145, 
   },
   image: {
     width: '100%',
@@ -86,13 +78,13 @@ const styles = StyleSheet.create({
     objectFit: 'cover',
   },
   cardContent: {
-    gap: 5
+    gap: 5,
   },
   address: {
     color: '#rgba(23, 23, 23, 1)',
     fontWeight: '400',
     fontSize: 12,
-    fontFamily: 'Poppins-Regular'
+    fontFamily: 'Poppins-Regular',
   },
   button: {
     backgroundColor: 'rgba(235, 35, 40, 1)',
@@ -101,13 +93,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
     maxWidth: 99,
-    height:28,
+    height: 28,
   },
   buttonText: {
     color: 'rgba(255, 255, 255, 1)',
     fontWeight: '400',
     fontSize: 12,
-    fontFamily: 'Poppins-Regular'
+    fontFamily: 'Poppins-Regular',
   },
 });
 

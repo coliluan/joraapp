@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, useIsFocused } from '@react-navigation/native';
+import { useIsFocused } from '@react-navigation/native';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +20,6 @@ import { WebView } from 'react-native-webview';
 import { globalStyles } from '../../assets/globalStyles';
 import { API_BASE } from '../../config/api';
 import { useUserStore } from '../store/useUserStore';
-import { useNotificationPolling } from '../useNotificationPolling';
 
 type Pdf = {
   _id: string;
@@ -44,11 +43,9 @@ const HomeScreen = () => {
   const [pdfList, setPdfList] = useState<Pdf[]>([]);
   const [selectedPdf, setSelectedPdf] = useState<Pdf | null>(null);
   const [isPdfModalVisible, setIsPdfModalVisible] = useState(false);
-  const [notificationCount, setNotificationCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [uploadedBanners, setUploadedBanners] = useState<string[]>([]);
 
-  const barcodeUrl = `${API_BASE}/api/barcode/${user?.barcode || ''}`;
   const scrollX = useRef(new Animated.Value(0)).current;
 
   const fetchPdfs = useCallback(async () => {
@@ -78,21 +75,6 @@ const HomeScreen = () => {
     }
   }, []);
 
-  // Show unseen notification count (zero if all seen)
-  const fetchNotificationCount = useCallback(async () => {
-    try {
-             const res = await fetch(`${API_BASE}/api/notifications`);
-      const contentTypeNotif = res.headers.get('content-type') || '';
-      if (!res.ok || !contentTypeNotif.includes('application/json')) {
-        throw new Error(`Invalid response from ${API_BASE}/api/notifications`);
-      }
-      const data = await res.json();
-      const lastSeen = parseInt(await AsyncStorage.getItem('lastSeenNotificationCount') || '0');
-      setNotificationCount(Array.isArray(data) ? Math.max(data.length - lastSeen, 0) : 0);
-    } catch (err) {
-      console.error('Error fetching notifications:', err);
-    }
-  }, []);
 
   useEffect(() => {
     if (isFocused) {
@@ -100,17 +82,6 @@ const HomeScreen = () => {
       fetchPdfs();
     }
   }, [isFocused, fetchPdfs, loadUserFromStorage]);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchNotificationCount();
-    }, [fetchNotificationCount])
-  );
-
-  // Poll for new notifications every 5 seconds when on home screen
-  useNotificationPolling(() => {
-    if (isFocused) fetchNotificationCount();
-  }, 5000);
 
   const openPdfModal = (pdf: Pdf) => {
     setSelectedPdf(pdf);
@@ -143,27 +114,6 @@ const HomeScreen = () => {
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        <View style={globalStyles.notification}>
-          {user?.firstName ? (
-            <TouchableOpacity
-              onPress={() => {
-                router.push('/components/notificationModal');
-              }}
-            >
-              <Image source={require('../../assets/images/notification.png')} />
-{notificationCount > 0 && (
-  <View style={styles.badge}>
-    <Text style={styles.badgeText}>{notificationCount}</Text>
-  </View>
-)}
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity onPress={() => router.push('../(auth)/logIn')}>
-              <Image style={styles.logo} source={require('../../assets/images/logs.png')} />
-            </TouchableOpacity>
-          )}
-  </View>
-
         <View style={styles.header}>
           <Text style={globalStyles.title}>
             {t('home.title')}{' '}
@@ -171,8 +121,6 @@ const HomeScreen = () => {
           </Text>
           <Text style={globalStyles.phone}>{user?.number || ''}</Text>
         </View>
-
-        {user?.barcode && <Image source={{ uri: barcodeUrl }} style={styles.barcode} />}
 
         {!user?.firstName && (
           <>
@@ -208,20 +156,21 @@ const HomeScreen = () => {
 
         <Text style={styles.sectionTitle}>{t('home.sectionTitle')}</Text>
 
-        <View style={{ justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
+        <View style={{ }}>
           <Animated.FlatList
-            data={uploadedBanners}
-            keyExtractor={(item, index) => index.toString()}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ justifyContent: 'center', alignItems: 'center' }}
-            renderItem={({ item }) => (
-              <Image
-                source={{ uri: item }}
-                style={styles.bannerImage}
-              />
-            )}
-          />
+  data={uploadedBanners}
+  keyExtractor={(item, index) => index.toString()}
+  horizontal
+  showsHorizontalScrollIndicator={false}
+  contentContainerStyle={{display: 'flex', gap: 10 }}
+  renderItem={({ item }) => (
+    <Image
+      source={{ uri: item }}
+      style={[styles.bannerImage, { width, height: 132 }]}  // Adjusting width and height
+    />
+  )}
+/>
+
         </View>
 
         {loading ? (
@@ -334,8 +283,8 @@ const HomeScreen = () => {
 
 const styles = StyleSheet.create({
   scrollContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 15,
+    paddingHorizontal: 15,
+    paddingTop: 35,
     paddingBottom: 65,
     backgroundColor: '#FAFAFA',
   },
@@ -346,11 +295,6 @@ const styles = StyleSheet.create({
     color: '#EB2328',
     fontWeight: '500',
     fontSize: 18,
-  },
-  barcode: {
-    width: '100%',
-    height: 60,
-    marginBottom: 41,
   },
   sectionTitle: {
     fontSize: 18,
@@ -405,13 +349,9 @@ const styles = StyleSheet.create({
     height: 40,
   },
   bannerImage: {
-    width: 300,
-    height: 150,
-    borderRadius: 10,
-    marginRight: 10,
     resizeMode: 'contain',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: 5,
+    marginBottom:30,
   },
 });
 

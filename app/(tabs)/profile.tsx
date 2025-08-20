@@ -19,10 +19,11 @@ import {
   Provider as PaperProvider,
   Portal,
 } from 'react-native-paper';
+import LogoutIcon from '../../assets/images/pencil-logout.svg';
+import ShoppingCartIcon from '../../assets/images/shopping-cart.svg';
 import { ENDPOINTS, getApiUrl } from '../../config/api';
 import LoginModal from '../components/loginModal';
 import { useUserStore } from '../store/useUserStore';
-
 const ProfileScreen = () => {
   const { t } = useTranslation();
   const router = useRouter();
@@ -116,9 +117,6 @@ const ProfileScreen = () => {
     },
   ] as const;
 
-
-  // Always call all hooks before any return. Render LoginModal conditionally below.
-
   return (
     <PaperProvider>
       <View style={styles.container}>
@@ -128,31 +126,34 @@ const ProfileScreen = () => {
           <>
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
               <View style={styles.innerContent}>
-                <View style={globalStyles.notification}>
-                  <TouchableOpacity onPress={() => router.push('/components/notificationModal')}>
-                    <Image source={require('../../assets/images/notification.png')} />
-                  </TouchableOpacity>
-                </View>
-
                 <View style={styles.header}>
-                  <TouchableOpacity onPress={pickImage}>
-                    <Image
-                      source={
-                        user.photo
-                          ? { uri: user.photo }
-                          : require('../../assets/images/unknown-profile.jpg')
-                      }
-                      style={styles.avatar}
-                    />
-                  </TouchableOpacity>
-
-                  <View style={styles.userInfo}>
-                    <Text style={styles.name}>{capitalizeFirstLetter(user.firstName)}</Text>
-                    <Text style={globalStyles.phone}>{user.number || ''}</Text>
+                  <View style={styles.leftHeader}>
+                    <TouchableOpacity onPress={pickImage}>
+                      <Image
+                        source={
+                          user.photo
+                            ? { uri: user.photo }
+                            : require('../../assets/images/unknown-profile.jpg')
+                        }
+                        style={styles.avatar}
+                      />
+                    </TouchableOpacity>
+                    <View style={styles.userInfo}>
+                      <Text style={styles.name}>{capitalizeFirstLetter(user.firstName)}</Text>
+                      <Text style={globalStyles.phone}>{user.number || ''}</Text>
+                    </View>
                   </View>
+                  <TouchableOpacity style={styles.shoppingCart} onPress={showDialog}>
+                    <LogoutIcon width={42} height={42} />
+                  </TouchableOpacity>
                 </View>
-
                 <View style={styles.profileSection}>
+                  <TouchableOpacity style={styles.cartButton}>
+                    <View style={styles.image}>
+                      <ShoppingCartIcon width={15} height={15}  fill="#EB2328"/>
+                    </View>
+                    <Text style={styles.optionText}>Shporta (1)</Text>
+                  </TouchableOpacity>
                   {options.map((item, index) => (
                     <TouchableOpacity
                       key={index}
@@ -172,6 +173,7 @@ const ProfileScreen = () => {
                     </View>
                     <Text style={styles.optionText}>{t('logout')}</Text>
                   </TouchableOpacity>
+                  
                 </View>
 
                 <View>
@@ -217,11 +219,18 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   innerContent: {
-    paddingVertical: 15,
+    paddingVertical: 30,
     paddingHorizontal: 15,
     gap: 24.5,
   },
   header: {
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  leftHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 15,
@@ -243,6 +252,18 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    gap: 10,
+    height: 60,
+  },
+  cartButton: {
+    borderWidth: 1,
+    borderColor: '#EB2328',
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
@@ -303,6 +324,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     fontSize: 18,
+  },
+  shoppingCart: {
+    width: 42,
+    height: 42,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

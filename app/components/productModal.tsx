@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ENDPOINTS, getApiUrl } from '../../config/api';
+import { useCartStore } from '../store/cartStore';
 
 type ProductModalProps = {
   visible: boolean;
@@ -11,6 +12,7 @@ type ProductModalProps = {
 const ProductModal = ({ visible, packageId, onClose }: ProductModalProps) => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const { addToCart } = useCartStore(state => state);
 
   useEffect(() => {
     console.log('Package ID in ProductModal:', packageId);
@@ -90,7 +92,14 @@ const ProductModal = ({ visible, packageId, onClose }: ProductModalProps) => {
           {/* Buttons Section */}
           <View style={styles.buttonContainer}>
             {/* Close Button */}
-            <TouchableOpacity style={styles.button}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => {
+                // add each product in the package with quantity 1 by default
+                products.forEach((p) => addToCart(p._id, 1));
+                onClose();
+              }}
+            >
               <Text style={styles.buttonText}>Shto ne shporte</Text>
             </TouchableOpacity>
             

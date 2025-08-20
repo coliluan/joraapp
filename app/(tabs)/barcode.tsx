@@ -17,7 +17,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(250, 250, 250, 1)',
   },
   image: {
-    width: 500,
+    width: 620,
     height: 150,
     transform: [{ rotate: '270deg' }],
     backgroundColor: 'transparent',
