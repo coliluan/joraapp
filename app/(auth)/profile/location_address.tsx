@@ -19,6 +19,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingVertical: 30,
+    paddingHorizontal: 20,
     backgroundColor: '#FFFFFF',
   },
   topSection: {
@@ -27,7 +28,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   iconContainer: {
-    marginRight: 20,
+    marginRight: 10,
   },
   titleContainer: {
     flex: 1,
@@ -38,22 +39,16 @@ const styles = StyleSheet.create({
     color: '#1F1F1F',
     textAlign: 'center',
   },
-  containerStyle: {
-    margin:10,
-    borderWidth:0.5,
-    borderColor: '#EB2328',
-    padding: 20,
-    borderRadius: 5,
-    backgroundColor: '#FAFAFA',
-    gap:30,
-  },
   inputContainer: {
-    borderRadius: 5,
-    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 10,
+    backgroundColor: '#FAFAFA',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 15,
-    height: 40,
+    height: 50,
+    marginBottom: 15,
   },
   passwordInput: {
     flex: 1,
@@ -69,7 +64,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 20,
-    marginHorizontal: 10,
   },
   cancelButton: {
     flex: 1,
@@ -163,8 +157,7 @@ const PassWordScreen = () => {
           </View>
         </View>
 
-        <ScrollView keyboardShouldPersistTaps="handled">
-          <View style={styles.containerStyle}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 20 }} keyboardShouldPersistTaps="handled">
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.passwordInput}
@@ -178,6 +171,7 @@ const PassWordScreen = () => {
               <Image source={require('../../../assets/images/eyeIcon.png')} style={styles.eyeIcon} />
             </TouchableOpacity>
           </View>
+
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.passwordInput}
@@ -191,6 +185,7 @@ const PassWordScreen = () => {
               <Image source={require('../../../assets/images/eyeIcon.png')} style={styles.eyeIcon} />
             </TouchableOpacity>
           </View>
+
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.passwordInput}
@@ -204,13 +199,13 @@ const PassWordScreen = () => {
               <Image source={require('../../../assets/images/eyeIcon.png')} style={styles.eyeIcon} />
             </TouchableOpacity>
           </View>
-          </View>
+
           <View style={styles.buttonWrapper}>
             <TouchableOpacity style={styles.cancelButton}>
-              <Text style={styles.cancelText}>Anulo</Text>
+              <Text style={styles.cancelText}>{t('password.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.saveButton} onPress={handleChangePassword}>
-              <Text style={styles.saveText}>Ruaj</Text>
+              <Text style={styles.saveText}>{t('password.button')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

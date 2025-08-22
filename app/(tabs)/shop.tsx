@@ -1,8 +1,7 @@
-import { globalStyles } from '@/assets/globalStyles';
-import { router } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Card } from 'react-native-paper';
+import CmimiIcon from '../../assets/images/cmimi.svg';
 import { ENDPOINTS, getApiUrl } from '../../config/api';
 import LoginModal from '../components/loginModal';
 import OrderLocationModal from '../components/OrderLocationModal';
@@ -14,18 +13,14 @@ import { useUserStore } from '../store/useUserStore';
 const Shop = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
-  const [orderLocationVisible, setOrderLocationVisible] = useState(true); // hapet default kur hyjmë në shop
+  const [orderLocationVisible, setOrderLocationVisible] = useState(true);
   const [productModalVisible, setProductModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Te gjitha');
   const { user, isLoggedIn, loadUserFromStorage } = useUserStore();
   const [quantities, setQuantities] = useState<{ [productId: string]: number }>({});
   const { cart, addToCart } = useCartStore(state => state);
   const loadFavorites = useFavoriteStore(state => state.loadFavorites);
   const [city, setCity] = useState('');
-  const favorites = useFavoriteStore(state => state.favorites);
-  const toggleFavorite = useFavoriteStore(state => state.toggleFavorite);
 
   useEffect(() => {
     loadUserFromStorage();
@@ -70,34 +65,6 @@ const Shop = () => {
     setOrderLocationVisible(false);
   };
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    filterProducts(query, selectedCategory);
-  };
-
-  const handleCategoryClick = (category: string) => {
-    setSelectedCategory(category);
-    filterProducts(searchQuery, category);
-  };
-
-  const filterProducts = (query: string, category: string) => {
-    let filtered = products;
-
-    if (query) {
-      filtered = filtered.filter(product =>
-        product.title.toLowerCase().includes(query.toLowerCase())
-      );
-    }
-
-    if (category && category !== 'Te gjitha') {
-      filtered = filtered.filter(product =>
-        product.category.toLowerCase() === category.toLowerCase()
-      );
-    }
-
-    setFilteredProducts(filtered);
-  };
-
   const handleProductClick = (product: any) => {
     setSelectedProduct(product);
     setProductModalVisible(true);
@@ -107,33 +74,10 @@ const Shop = () => {
     setProductModalVisible(false);
   };
 
-  const changeQuantity = (productId: string, type: 'increase' | 'decrease') => {
-    const currentQuantity = quantities[productId] ?? 0;
-    const newQuantity = type === 'increase' ? currentQuantity + 1 : Math.max(0, currentQuantity - 1);
-
-    setQuantities(prev => ({
-      ...prev,
-      [productId]: newQuantity,
-    }));
-
-    addToCart(productId, newQuantity);
-  };
 
   if (user?.isGuest || !isLoggedIn) {
     return <LoginModal />;
   }
-
-  const totalPrice = useMemo(() => {
-    let total = 0;
-    for (const productId in quantities) {
-      const quantity = quantities[productId];
-      const product = products.find(p => p._id === productId);
-      if (product && quantity > 0) {
-        total += quantity * parseFloat(product.price);
-      }
-    }
-    return total.toFixed(2);
-  }, [quantities, products]);
 
   return (
     <SafeAreaView>
@@ -161,31 +105,17 @@ const Shop = () => {
                     style={styles.productImage}
                     source={{ uri: getApiUrl(product.image) }}
                   />
-                  <Card.Content>
+                  <Card.Content style={styles.cardContent}>
                     <View>
                       <Text style={styles.title}>{product.title}</Text>
+                      <Text style={styles.subtitle}>Përshkrimi</Text>
                     </View>
-                    <View>
-                      <Text style={styles.title}>Vetem</Text>
-                      <Text style={styles.price}>{product.price}€</Text>
+                    <View style={styles.priceBadgeContainerAbsolute}>
+                      <CmimiIcon width={80} height={49} />
+                      <Text style={styles.priceBadgeLabel}>vetëm</Text>
+                      <Text style={styles.priceBadgeValue}>{product.price}€</Text>
                     </View>
-                    
-                    
                   </Card.Content>
-                  {/* <Card.Actions style={styles.quantityContainer}>
-                    <View style={styles.cartButton}>
-                      <TouchableOpacity
-                        style={styles.buttonCart}
-                        onPress={() => {
-                          const qty = quantities[product._id] || 0;
-                          const finalQty = Math.max(1, qty);
-                          addToCart(product._id, finalQty);
-                        }}
-                      >
-                        <Text style={{ color: 'white' }}>Shto në Shportë</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </Card.Actions> */}
                 </Card>
                </TouchableOpacity>
             ))
@@ -194,37 +124,7 @@ const Shop = () => {
           )}
         </View>        
       </ScrollView>
-      <View style={styles.fixedCartButtonContainer}>
-        <TouchableOpacity
-  style={styles.fixedCartButton}
-  onPress={() => {
-  const selectedProducts = Object.entries(quantities)
-    .filter(([productId, qty]) => qty > 0)
-    .map(([productId, qty]) => {
-      const product = products.find(p => p._id === productId);
-      if (product) {
-        return {
-          ...product,
-          quantity: qty,
-        };
-      }
-      return null;
-    })
-    .filter(Boolean);
-
-  router.push({
-    pathname: '../components/store',
-    params: {
-      data: JSON.stringify(selectedProducts),
-    },
-  });
-}}
->
-          <Image style={styles.cartImage} source={require('../../assets/images/shopping.png')} />
-          <Text style={styles.fixedCartButtonText}>
-             {totalPrice}€</Text>
-        </TouchableOpacity>
-      </View>
+      
 
       {selectedProduct && (
         <ProductModal 
@@ -249,30 +149,79 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginBottom: 90,
+    
   },
   card: {
     width: '48%',
-    marginBottom: 10,
+    marginBottom: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
     zIndex: 1,
   },
   productImage: {
     width: '100%',
-    height: 170,
-    paddingHorizontal: 40,
-    paddingVertical: 10,
+    height: 220,
+    justifyContent: 'center',
     backgroundColor: 'transparent',
-    resizeMode: 'contain',
+    resizeMode: 'cover',
     zIndex: 1,
+    paddingHorizontal: 10,
   },
+  cardContent: {
+    position: 'relative',
+    paddingTop: 12,
+    paddingBottom: 16,
+    paddingHorizontal: 0,
+  },
+  
   title: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#171717',
   },
-  price: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: 'red',
-    margin: 0,
+  subtitle: {
+    marginTop: 6,
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  priceBadgeContainer: {
+    position: 'relative',
+    width: 77,
+    height: 49,
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+  },
+  priceBadgeContainerAbsolute: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 77,
+    height: 49,
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+  },
+  priceBadgeLabel: {
+    position: 'absolute',
+    top: 4,
+    right: 10,
+    color: '#000000',
+    fontSize: 8,
+    fontWeight: '400',
+    textTransform: 'lowercase',
+  },
+  priceBadgeValue: {
+    position: 'absolute',
+    bottom: 9,
+    right: 9,
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  content:{
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   quantityContainer: {
     paddingHorizontal: 12,
@@ -393,45 +342,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     alignItems: 'center',
   },
-  fixedCartButtonContainer: {
-  position: 'absolute',
-  // top: 700,
-  // left: 250,
-  bottom: 100,
-  right: 10,
-  alignItems: 'center',
-  zIndex: 10,
-},
-
-fixedCartButton: {
-  backgroundColor: 'red',
-  paddingVertical: 12,
-  paddingHorizontal: 15,
-  borderRadius: 30,
-  elevation: 5,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.3,
-  shadowRadius: 4,
-  display: 'flex',
-  flexDirection:'row',
-  alignItems: 'center',
-  zIndex: 10,
-},
-
-fixedCartButtonText: {
-  color: 'white',
-  fontWeight: 'bold',
-  fontSize: 16,
-  justifyContent: 'center',
-  alignItems:'center',
-},
-cartImage: {
-  width: 30,
-  height: 30,
-},
-
-  favoriteIcon:{
+   favoriteIcon:{
     width: 40,
     borderRadius: 100,
     height: 40,

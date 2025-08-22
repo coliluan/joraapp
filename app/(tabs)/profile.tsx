@@ -27,7 +27,7 @@ import { useUserStore } from '../store/useUserStore';
 const ProfileScreen = () => {
   const { t } = useTranslation();
   const router = useRouter();
-  const { user, isLoggedIn, setUser, logout, loadUserFromStorage } = useUserStore();
+  const { user, isLoggedIn, setUser, loadUserFromStorage } = useUserStore();
   const [visible, setVisible] = React.useState(false);
 
   useEffect(() => {
@@ -76,16 +76,7 @@ const ProfileScreen = () => {
   };
 
   const [shouldRedirect, setShouldRedirect] = React.useState(false);
-  const handleLogOutUser = async () => {
-    try {
-      await logout();
-      Alert.alert('Sukses', 'U çkyçët me sukses.');
-      setShouldRedirect(true);
-    } catch (e) {
-      Alert.alert('Gabim', 'Ndodhi një gabim gjatë çkyçjes.');
-    }
-  };
-
+  
   useEffect(() => {
     if (shouldRedirect) {
       router.replace('/');
@@ -104,6 +95,11 @@ const ProfileScreen = () => {
       label: t('profile.profile'),
       icon: require('../../assets/images/edit.png'),
       screen: '../(auth)/profile/edit_screen',
+    },
+    {
+      label: 'Adresa e transportit',
+      icon: require('../../assets/images/location.png'),
+      screen: '../(auth)/profile/location_address',
     },
     {
       label: t('placeHolder'),
@@ -154,6 +150,8 @@ const ProfileScreen = () => {
                     </View>
                     <Text style={styles.optionText}>Shporta (1)</Text>
                   </TouchableOpacity>
+
+                  <View><Text style={styles.title}>Të pëgjithshme</Text></View>
                   {options.map((item, index) => (
                     <TouchableOpacity
                       key={index}
@@ -166,7 +164,6 @@ const ProfileScreen = () => {
                       <Text style={styles.optionText}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
-
                   <TouchableOpacity style={styles.option} onPress={showDialog}>
                     <View style={styles.image}>
                       <Image source={require('../../assets/images/trash.png')} style={styles.icon} />
@@ -195,9 +192,6 @@ const ProfileScreen = () => {
                 <Dialog.Actions>
                   <Button style={globalStyles.dialogButton} onPress={hideDialog}>
                     {t('no')}
-                  </Button>
-                  <Button style={globalStyles.buttonDialog} onPress={handleLogOutUser}>
-                    {t('yes')}
                   </Button>
                 </Dialog.Actions>
               </Dialog>
@@ -249,7 +243,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   profileSection: {
-    gap: 15,
+    // gap: 15,
   },
   option: {
     flexDirection: 'row',
@@ -289,6 +283,12 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 16,
     color: 'rgba(31, 31, 31, 1)',
+  },
+  title: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#1F1F1F',
+    marginBottom: 10,
   },
   helpText: {
     fontWeight: '500',
