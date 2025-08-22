@@ -1,7 +1,7 @@
 import { globalStyles } from '@/assets/globalStyles';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -9,26 +9,30 @@ import {
   Linking,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import {
   Button,
   Dialog,
-  Provider as PaperProvider,
-  Portal,
+  PaperProvider,
+  Portal
 } from 'react-native-paper';
+import NotificationIcon from '../../assets/images/notification.svg';
 import LogoutIcon from '../../assets/images/pencil-logout.svg';
 import ShoppingCartIcon from '../../assets/images/shopping-cart.svg';
 import { ENDPOINTS, getApiUrl } from '../../config/api';
 import LoginModal from '../components/loginModal';
 import { useUserStore } from '../store/useUserStore';
+
 const ProfileScreen = () => {
   const { t } = useTranslation();
   const router = useRouter();
   const { user, isLoggedIn, setUser, loadUserFromStorage } = useUserStore();
   const [visible, setVisible] = React.useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);  // State për Switch
 
   useEffect(() => {
     loadUserFromStorage();
@@ -113,6 +117,24 @@ const ProfileScreen = () => {
     },
   ] as const;
 
+  const bottomOptions = [
+    {
+      label: t('profile.lang'),
+      icon: require('../../assets/images/language.png'),
+      isSvg: false,
+      screen: '../(auth)/profile/language',
+    },
+    {
+      label: 'Njoftimet',
+      icon: NotificationIcon,
+      isSvg: true,
+      screen: '../components/notificationModal',
+    },
+  ] as const;
+
+  // Funksioni për menaxhuar switch
+  const toggleNotifications = () => setNotificationsEnabled(prevState => !prevState);
+
   return (
     <PaperProvider>
       <View style={styles.container}>
@@ -146,7 +168,7 @@ const ProfileScreen = () => {
                 <View style={styles.profileSection}>
                   <TouchableOpacity style={styles.cartButton}>
                     <View style={styles.image}>
-                      <ShoppingCartIcon width={15} height={15}  fill="#EB2328"/>
+                      <ShoppingCartIcon width={15} height={15} fill="#EB2328" />
                     </View>
                     <Text style={styles.optionText}>Shporta (1)</Text>
                   </TouchableOpacity>
@@ -164,16 +186,42 @@ const ProfileScreen = () => {
                       <Text style={styles.optionText}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
-                  <TouchableOpacity style={styles.option} onPress={showDialog}>
-                    <View style={styles.image}>
-                      <Image source={require('../../assets/images/trash.png')} style={styles.icon} />
-                    </View>
-                    <Text style={styles.optionText}>{t('logout')}</Text>
-                  </TouchableOpacity>
-                  
+
+                  <View><Text style={styles.title}>Preferencat</Text></View>
+
+                  {bottomOptions.map((item, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.option}
+                      onPress={() => router.push({ pathname: item.screen })}
+                    >
+                      <View style={styles.image}>
+                        {item.isSvg ? (
+                          <item.icon width={15} height={15} />
+                        ) : (
+                          <Image source={item.icon} style={styles.icon} />
+                        )}
+                      </View>
+                      <Text style={styles.optionText}>{item.label}</Text>
+                    </TouchableOpacity>
+
+                    
+                  ))}
+
+
+                  <View style={styles.notificationSwitch}>
+                    <Text style={styles.optionText}>Aktivizo Njoftimet</Text>
+                    <Switch
+                      trackColor={{ false: "#d3d3d3", true: "#FF4C4C" }} // Red for active
+                      thumbColor={notificationsEnabled ? "#FFFFFF" : "#f4f3f4"} // White for active thumb
+                      onValueChange={toggleNotifications}
+                      value={notificationsEnabled}
+                      style={styles.customSwitch}
+                    />
+                  </View>
                 </View>
 
-                <View>
+                <View >
                   <Text style={styles.helpText}>{t('profile.help')}</Text>
                   <Text style={styles.support} onPress={handleEmailPress}>
                     support@jora.center
@@ -202,7 +250,6 @@ const ProfileScreen = () => {
     </PaperProvider>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
@@ -242,9 +289,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#000',
   },
-  profileSection: {
-    // gap: 15,
-  },
+  profileSection: {},
   option: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -302,28 +347,18 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginBottom: 30,
   },
-  passwordInput: {
-    flex: 1,
-    fontSize: 18,
-    color: '#000',
-  },
-  eyeIcon: {
-    width: 20,
-    height: 20,
-    tintColor: '#999',
-  },
-   custom: {
-    gap: 20,
-  },
-  input: {
+  notificationSwitch: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 5,
     alignItems: 'center',
-    height: 40,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    fontSize: 18,
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    marginTop: 15,
+  },
+  customSwitch: {
+    transform: [{ scaleX: 1.2 }, { scaleY: 1.2 }], // Slightly enlarge the switch
   },
   shoppingCart: {
     width: 42,
