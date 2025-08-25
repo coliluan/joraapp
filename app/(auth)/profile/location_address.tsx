@@ -1,20 +1,23 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import Left from '../../../assets/images/left-side.svg';
 import Location from '../../../assets/images/location-address.svg';
-import Trash from '../../../assets/images/pencil-logout.svg'; // krijo një ikonë për delete
-
+import Plus from '../../../assets/images/plus.svg';
+import Trash from '../../../assets/images/trash.svg';
 const LocationAddress = () => {
   const [sameAddress, setSameAddress] = useState(false);
   const [adding, setAdding] = useState(false); // true when showing form
   const [locations, setLocations] = useState<any[]>([]); // array of saved locations
+  const [editIndex, setEditIndex] = useState<number | null>(null); // null means add, number means edit
 
   // Transport address
   const [tName, setTName] = useState('');
@@ -29,8 +32,30 @@ const LocationAddress = () => {
   const [bPostal, setBPostal] = useState('');
   const [bAddress, setBAddress] = useState('');
 
+  // Refs for inputs
+  const tNameRef = useRef<TextInput>(null);
+  const tPhoneRef = useRef<TextInput>(null);
+  const tCityRef = useRef<TextInput>(null);
+  const tAddressRef = useRef<TextInput>(null);
+  const bNameRef = useRef<TextInput>(null);
+  const bPhoneRef = useRef<TextInput>(null);
+  const bCityRef = useRef<TextInput>(null);
+  const bPostalRef = useRef<TextInput>(null);
+  const bAddressRef = useRef<TextInput>(null);
   // Show add form
   const handleAdd = () => {
+    // Clear all fields for new address
+    setTName('');
+    setTPhone('');
+    setTCity('');
+    setTAddress('');
+    setBName('');
+    setBPhone('');
+    setBCity('');
+    setBPostal('');
+    setBAddress('');
+    setSameAddress(false);
+    setEditIndex(null); // Not editing, adding new
     setAdding(true);
   };
 
@@ -45,9 +70,15 @@ const LocationAddress = () => {
       bAddress: sameAddress ? tAddress : bAddress,
       sameAddress
     };
-    setLocations([newLocation]); // Only one location for now
+    if (editIndex !== null) {
+      // Update existing
+      setLocations(prev => prev.map((loc, idx) => idx === editIndex ? newLocation : loc));
+    } else {
+      // Add new
+      setLocations(prev => [...prev, newLocation]);
+    }
     setAdding(false);
-    // Optionally reset form fields here
+    setEditIndex(null);
   };
 
   // Delete location
@@ -74,7 +105,8 @@ const LocationAddress = () => {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
       {/* Header */}
       <View style={styles.topSection}>
         <TouchableOpacity style={styles.iconContainer}>
@@ -83,38 +115,58 @@ const LocationAddress = () => {
         <View style={styles.titleContainer}>
           <Text style={styles.headerText}>Adresa e transportit</Text>
         </View>
+        {locations.length > 0 && !adding && (
+          <TouchableOpacity onPress={handleAdd}>
+            <Plus width={20} height={20} />
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* If there is a location, always show part 3 */}
+      {/* Show all saved locations dynamically */}
       {locations.length > 0 && !adding && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{locations[0].tAddress}</Text>
-          <View style={styles.cardActions}>
-            <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-              <Trash width={16} height={16} fill={'#EB2328'} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-              <Text style={styles.editButtonText}>Ndrysho</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.cardContent}>
-            <View style={styles.addressColumn}>
-              <Text style={styles.sectionTitle}>Adresa e Transportit</Text>
-              <Text>{locations[0].tName}</Text>
-              <Text>{locations[0].tPhone}</Text>
-              <Text>{locations[0].tCity}</Text>
-              <Text>{locations[0].tAddress}</Text>
+        locations.map((loc, idx) => (
+          <View style={styles.card} key={idx}>
+            <Text style={styles.cardTitle}>{loc.tAddress}</Text>
+            <View style={styles.cardActions}>
+              <TouchableOpacity style={styles.deleteButton} onPress={() => setLocations(locs => locs.filter((_, i) => i !== idx))}>
+                <Trash width={15}  height={15}/>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.editButton} onPress={() => {
+                setTName(loc.tName);
+                setTPhone(loc.tPhone);
+                setTCity(loc.tCity);
+                setTAddress(loc.tAddress);
+                setBName(loc.bName);
+                setBPhone(loc.bPhone);
+                setBCity(loc.bCity);
+                setBPostal(loc.bPostal);
+                setBAddress(loc.bAddress);
+                setSameAddress(loc.sameAddress);
+                setEditIndex(idx);
+                setAdding(true);
+              }}>
+                <Text style={styles.editButtonText}>Ndrysho</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.addressColumn}>
-              <Text style={styles.sectionTitle}>Adresa e Faturimit</Text>
-              <Text>{locations[0].bName}</Text>
-              <Text>{locations[0].bPhone}</Text>
-              <Text>{locations[0].bCity}</Text>
-              {locations[0].bPostal ? <Text>{locations[0].bPostal}</Text> : null}
-              <Text>{locations[0].bAddress}</Text>
+            <View style={styles.cardContent}>
+              <View style={styles.addressColumn}>
+                <Text style={styles.sectionTitle}>Adresa e Transportit</Text>
+                <Text style={styles.text}>{loc.tName}</Text>
+                <Text style={styles.text}>{loc.tPhone}</Text>
+                <Text style={styles.text}>{loc.tCity}</Text>
+                <Text style={styles.text}>{loc.tAddress}</Text>
+              </View>
+              <View style={styles.addressColumn}>
+                <Text style={styles.sectionTitle}>Adresa e Faturimit</Text>
+                <Text style={styles.text}>{loc.bName}</Text>
+                <Text style={styles.text}>{loc.bPhone}</Text>
+                <Text style={styles.text}>{loc.bCity}</Text>
+                {loc.bPostal ? <Text style={styles.text}>{loc.bPostal}</Text> : null}
+                <Text style={styles.text}>{loc.bAddress}</Text>
+              </View>
             </View>
           </View>
-        </View>
+        ))
       )}
 
       {/* If no location and not adding, show part 1 */}
@@ -137,28 +189,51 @@ const LocationAddress = () => {
           <Text style={styles.formTitle}>Plotësoni adresën e transportit</Text>
           {/* Transport Address */}
           <TextInput
+            ref={tNameRef}
             style={styles.input}
             placeholder="Emri dhe Mbiemri"
+            placeholderTextColor="#1F1F1F"
             value={tName}
             onChangeText={setTName}
+            returnKeyType="next"
+            onSubmitEditing={() => tPhoneRef.current?.focus()}
+            blurOnSubmit={false}
           />
           <TextInput
+            ref={tPhoneRef}
             style={styles.input}
             placeholder="Numri i telefonit"
+            placeholderTextColor="#1F1F1F"
             value={tPhone}
             onChangeText={setTPhone}
+            returnKeyType="next"
+            onSubmitEditing={() => tCityRef.current?.focus()}
+            blurOnSubmit={false}
+            keyboardType="phone-pad"
           />
           <TextInput
+            ref={tCityRef}
             style={styles.input}
             placeholder="Qyteti"
+            placeholderTextColor="#1F1F1F"
             value={tCity}
             onChangeText={setTCity}
+            returnKeyType="next"
+            onSubmitEditing={() => tAddressRef.current?.focus()}
+            blurOnSubmit={false}
           />
           <TextInput
+            ref={tAddressRef}
             style={styles.input}
             placeholder="Adresa"
+            placeholderTextColor="#1F1F1F"
             value={tAddress}
             onChangeText={setTAddress}
+            returnKeyType={sameAddress ? "done" : "next"}
+            onSubmitEditing={() => {
+              if (!sameAddress) bNameRef.current?.focus();
+            }}
+            blurOnSubmit={sameAddress}
           />
           {/* Checkbox */}
           <View style={styles.checkboxContainer}>
@@ -171,34 +246,60 @@ const LocationAddress = () => {
           {!sameAddress && (
             <>
               <TextInput
+                ref={bNameRef}
                 style={styles.input}
                 placeholder="Emri dhe Mbiemri"
+                placeholderTextColor="#1F1F1F"
                 value={bName}
                 onChangeText={setBName}
+                returnKeyType="next"
+                onSubmitEditing={() => bPhoneRef.current?.focus()}
+                blurOnSubmit={false}
               />
               <TextInput
+                ref={bPhoneRef}
                 style={styles.input}
                 placeholder="Numri i telefonit"
+                placeholderTextColor="#1F1F1F"
                 value={bPhone}
                 onChangeText={setBPhone}
+                returnKeyType="next"
+                onSubmitEditing={() => bCityRef.current?.focus()}
+                blurOnSubmit={false}
+                keyboardType="phone-pad"
               />
               <TextInput
+                ref={bCityRef}
                 style={styles.input}
                 placeholder="Qyteti"
+                placeholderTextColor="#1F1F1F"
                 value={bCity}
                 onChangeText={setBCity}
+                returnKeyType="next"
+                onSubmitEditing={() => bPostalRef.current?.focus()}
+                blurOnSubmit={false}
               />
               <TextInput
+                ref={bPostalRef}
                 style={styles.input}
                 placeholder="Kodi postar"
+                placeholderTextColor="#1F1F1F"
                 value={bPostal}
                 onChangeText={setBPostal}
+                returnKeyType="next"
+                onSubmitEditing={() => bAddressRef.current?.focus()}
+                blurOnSubmit={false}
+                keyboardType="number-pad"
               />
               <TextInput
+                ref={bAddressRef}
                 style={styles.input}
                 placeholder="Adresa"
+                placeholderTextColor="#1F1F1F"
                 value={bAddress}
                 onChangeText={setBAddress}
+                returnKeyType="done"
+                onSubmitEditing={handleSave}
               />
             </>
           )}
@@ -208,6 +309,7 @@ const LocationAddress = () => {
         </View>
       )}
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -241,28 +343,30 @@ const styles = StyleSheet.create({
   partOne: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 30,
+    marginVertical: 140,
   },
   locationIcon: {
     marginBottom: 20,
   },
   noAddressText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '500',
     color: '#EB2328',
     textAlign: 'center',
     marginBottom: 6,
   },
   subText: {
-    fontSize: 14,
-    color: '#9E9E9E',
+    fontSize: 13,
+    color: '#828282',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 27,
   },
   addButton: {
     backgroundColor: '#EB2328',
-    paddingVertical: 12,
-    paddingHorizontal: 40,
+    width: 183,
+    height: 48,
+   justifyContent: 'center',
+   alignItems: 'center',
     borderRadius: 8,
     alignSelf: 'center',
     marginTop: 10,
@@ -270,29 +374,28 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '400',
   },
 
   /** Part 2 **/
   formContainer: {
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: '#EB2328',
-    borderRadius: 8,
-    padding: 16,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 5,
+    padding: 10,
+    backgroundColor: '#FAFAFA',
     marginBottom: 20,
   },
   formTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
     color: '#1F1F1F',
     marginBottom: 12,
   },
   input: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 6,
+    borderRadius: 5,
+    height:40,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
@@ -343,20 +446,26 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     marginRight: 10,
-    backgroundColor: '#FFEAEA',
+    backgroundColor: '#FFF1F2',
     padding: 6,
     borderRadius: 6,
   },
+  trash: {
+    width: 16,
+    height: 16,
+  },
   editButton: {
-    backgroundColor: '#EB2328',
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 6,
+    backgroundColor: '#FFF1F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    height: 30,
   },
   editButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
+    color: '#EB2328',
+    fontSize: 13,
+    fontWeight: '500',
   },
   cardContent: {
     flexDirection: 'row',
@@ -368,8 +477,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: '#EB2328',
-    fontWeight: '600',
-    marginBottom: 6,
+    fontWeight: '400',
+    marginBottom: 5,
+    fontSize: 13,
+  },
+  text:{
+    color:"#828282",
+    fontSize: 13,
+    fontWeight: '400',
   },
 });
 
