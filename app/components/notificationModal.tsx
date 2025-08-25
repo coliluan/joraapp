@@ -1,4 +1,3 @@
-import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import {
@@ -8,8 +7,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Bell from '../../assets/images/bell.svg';
+import Cross from '../../assets/images/cross.svg';
 import { API_BASE, API_CONFIG } from '../../config/api';
-
 interface Notification {
   title: string;
   body: string;
@@ -66,7 +66,15 @@ const NotificationModal = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <View><Text>Njoftime</Text></View>
+      <View style={styles.topSection}>
+        <View>
+          <Text style={styles.titleSection}>Njoftime</Text>
+        </View>
+        <View>
+          <Cross width={16} height={16} />
+        </View>
+      </View>
+      
       {notifications.map((notif, index) => (
         <TouchableOpacity
           key={index}
@@ -74,7 +82,7 @@ const NotificationModal = () => {
           activeOpacity={0.8}
         >
           <View style={styles.iconWrapper}>
-            <MaterialIcons name="notifications-none" size={22} color="#e53935" />
+            <Bell width={15} height={15} />
           </View>
           <View style={styles.textWrapper}>
             <Text style={styles.title}>{notif.title || 'Titulli'}</Text>
@@ -95,6 +103,18 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#fff',
   },
+  topSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop:40,
+    marginBottom: 27,
+  },
+  titleSection: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#111',
+  },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -110,7 +130,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ffebee',
+    backgroundColor: '#FFF2F2',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
