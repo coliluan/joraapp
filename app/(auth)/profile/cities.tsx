@@ -10,6 +10,7 @@ const CitiesScreen = () => {
   const { from } = useLocalSearchParams();
 
   const handleSelectCity = async (city: string) => {
+    // Only set selectedCity in AsyncStorage for edit/register, not for auto-save
     await AsyncStorage.setItem('selectedCity', city);
     if (from === 'edit' || from === 'register') {
       router.back(); 

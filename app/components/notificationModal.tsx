@@ -1,7 +1,13 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
-import { Image, Linking, ScrollView, StyleSheet, Text } from 'react-native';
-import { Card, IconButton } from 'react-native-paper';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { API_BASE, API_CONFIG } from '../../config/api';
 
 interface Notification {
@@ -24,7 +30,6 @@ const fetchJsonWithFallback = async (path: string) => {
     }
     return res.json();
   } catch (e) {
-    // Fallback to production
     const resProd = await fetch(`${API_CONFIG.PRODUCTION}${path}`);
     const contentType = resProd.headers.get('content-type') || '';
     if (!resProd.ok || !contentType.includes('application/json')) {
@@ -45,7 +50,6 @@ const NotificationModal = () => {
 
         if (Array.isArray(data)) {
           setNotifications(data);
-          // Mark all as seen by saving count
           await AsyncStorage.setItem('lastSeenNotificationCount', data.length.toString());
         } else {
           console.warn('Data nuk është një array:', data);
@@ -62,26 +66,21 @@ const NotificationModal = () => {
 
   return (
     <ScrollView style={styles.container}>
+      <View><Text>Njoftime</Text></View>
       {notifications.map((notif, index) => (
-        <Card key={index} style={styles.card}>
-          <Card.Title
-            title={notif.title}
-            subtitle={`${notif.body}\n${new Date(notif.sentAt).toLocaleString()}`}
-            left={() => (
-              <Image
-                source={require('../../assets/images/notification.png')}
-                style={styles.notificationIcon}
-              />
-            )}
-            right={(props) => (
-              <IconButton
-                {...props}
-                onPress={() => Linking.openURL('https://www.facebook.com/JoraCenter/')}
-                icon="dots-vertical"
-              />
-            )}
-          />
-        </Card>
+        <TouchableOpacity
+          key={index}
+          style={[styles.item, index === 0 && styles.itemActive]}
+          activeOpacity={0.8}
+        >
+          <View style={styles.iconWrapper}>
+            <MaterialIcons name="notifications-none" size={22} color="#e53935" />
+          </View>
+          <View style={styles.textWrapper}>
+            <Text style={styles.title}>{notif.title || 'Titulli'}</Text>
+            <Text style={styles.subtitle}>{notif.body || 'Përshkrimi'}</Text>
+          </View>
+        </TouchableOpacity>
       ))}
 
       {notifications.length === 0 && (
@@ -94,21 +93,44 @@ const NotificationModal = () => {
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    backgroundColor: '#fafafa',
+    backgroundColor: '#fff',
   },
-  card: {
-    marginBottom: 12,
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  itemActive: {
+    backgroundColor: '#FFF1F2',
+    height: 72,
+  },
+  iconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ffebee',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  textWrapper: {
+    flex: 1,
+  },
+  title: {
+    fontWeight: '600',
+    fontSize: 15,
+    color: '#111',
+  },
+  subtitle: {
+    fontSize: 13,
+    color: '#555',
   },
   emptyText: {
     textAlign: 'center',
     color: '#888',
     marginTop: 40,
-  },
-  notificationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 8,
   },
 });
 

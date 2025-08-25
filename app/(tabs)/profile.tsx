@@ -1,10 +1,8 @@
 import { globalStyles } from '@/assets/globalStyles';
-import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Alert,
   Image,
   Linking,
   ScrollView,
@@ -20,10 +18,9 @@ import {
   PaperProvider,
   Portal
 } from 'react-native-paper';
-import NotificationIcon from '../../assets/images/notification.svg';
+import NotifyIcon from '../../assets/images/notification.svg';
 import LogoutIcon from '../../assets/images/pencil-logout.svg';
 import ShoppingCartIcon from '../../assets/images/shopping-cart.svg';
-import { ENDPOINTS, getApiUrl } from '../../config/api';
 import LoginModal from '../components/loginModal';
 import { useUserStore } from '../store/useUserStore';
 
@@ -32,7 +29,7 @@ const ProfileScreen = () => {
   const router = useRouter();
   const { user, isLoggedIn, setUser, loadUserFromStorage } = useUserStore();
   const [visible, setVisible] = React.useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);  // State për Switch
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false); 
 
   useEffect(() => {
     loadUserFromStorage();
@@ -41,43 +38,6 @@ const ProfileScreen = () => {
   const showDialog = () => setVisible(true);
   const hideDialog = () => setVisible(false);
 
-  const pickImage = async () => {
-    try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permissionResult.granted) {
-        alert('Leja për galerinë është e nevojshme!');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 1,
-        allowsEditing: true,
-        base64: true,
-      });
-
-      if (!result.canceled && result.assets?.length > 0 && user?.firstName) {
-        const base64Img = `data:image/jpeg;base64,${result.assets[0].base64}`;
-
-        const res = await fetch(getApiUrl(ENDPOINTS.USER_PHOTO), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ firstName: user.firstName, photo: base64Img }),
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-          setUser(data.user);
-          Alert.alert('Sukses', 'Foto u përditësua me sukses!');
-        } else {
-          Alert.alert('Gabim', data.message);
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error picking image:', error);
-    }
-  };
 
   const [shouldRedirect, setShouldRedirect] = React.useState(false);
   
@@ -110,11 +70,6 @@ const ProfileScreen = () => {
       icon: require('../../assets/images/password.png'),
       screen: '../(auth)/profile/password',
     },
-    {
-      label: t('profile.lang'),
-      icon: require('../../assets/images/language.png'),
-      screen: '../(auth)/profile/language',
-    },
   ] as const;
 
   const bottomOptions = [
@@ -124,16 +79,15 @@ const ProfileScreen = () => {
       isSvg: false,
       screen: '../(auth)/profile/language',
     },
-    {
-      label: 'Njoftimet',
-      icon: NotificationIcon,
-      isSvg: true,
-      screen: '../components/notificationModal',
-    },
   ] as const;
 
-  // Funksioni për menaxhuar switch
   const toggleNotifications = () => setNotificationsEnabled(prevState => !prevState);
+
+  const handleLogout = () => {
+  setUser(null);
+  setShouldRedirect(true);
+  hideDialog();
+};
 
   return (
     <PaperProvider>
@@ -146,16 +100,14 @@ const ProfileScreen = () => {
               <View style={styles.innerContent}>
                 <View style={styles.header}>
                   <View style={styles.leftHeader}>
-                    <TouchableOpacity onPress={pickImage}>
-                      <Image
-                        source={
-                          user.photo
-                            ? { uri: user.photo }
-                            : require('../../assets/images/unknown-profile.jpg')
-                        }
-                        style={styles.avatar}
-                      />
-                    </TouchableOpacity>
+                    <Image
+                      source={
+                        user.photo
+                          ? { uri: user.photo.startsWith('data:image') ? user.photo : `data:image/jpeg;base64,${user.photo}` }
+                          : require('../../assets/images/unknown-profile.jpg')
+                      }
+                      style={styles.avatar}
+                    />
                     <View style={styles.userInfo}>
                       <Text style={styles.name}>{capitalizeFirstLetter(user.firstName)}</Text>
                       <Text style={globalStyles.phone}>{user.number || ''}</Text>
@@ -172,7 +124,7 @@ const ProfileScreen = () => {
                     </View>
                     <Text style={styles.optionText}>Shporta (1)</Text>
                   </TouchableOpacity>
-
+                  <View style={styles.optionSection} >
                   <View><Text style={styles.title}>Të pëgjithshme</Text></View>
                   {options.map((item, index) => (
                     <TouchableOpacity
@@ -185,11 +137,12 @@ const ProfileScreen = () => {
                       </View>
                       <Text style={styles.optionText}>{item.label}</Text>
                     </TouchableOpacity>
-                  ))}
-
-                  <View><Text style={styles.title}>Preferencat</Text></View>
-
-                  {bottomOptions.map((item, index) => (
+                  ))}  
+                  </View>
+                  
+                  <View style={styles.optionSection} >
+                     <View><Text style={styles.title}>Preferencat</Text></View>
+                 {bottomOptions.map((item, index) => (
                     <TouchableOpacity
                       key={index}
                       style={styles.option}
@@ -204,42 +157,55 @@ const ProfileScreen = () => {
                       </View>
                       <Text style={styles.optionText}>{item.label}</Text>
                     </TouchableOpacity>
-
-                    
                   ))}
-
-
                   <View style={styles.notificationSwitch}>
-                    <Text style={styles.optionText}>Aktivizo Njoftimet</Text>
-                    <Switch
-                      trackColor={{ false: "#d3d3d3", true: "#FF4C4C" }} // Red for active
-                      thumbColor={notificationsEnabled ? "#FFFFFF" : "#f4f3f4"} // White for active thumb
+                    <View style={styles.switchSection} >
+                      <View style={styles.image}>
+                        <NotifyIcon style={styles.icon} width={20} height={20} />
+                        
+                      </View>
+                      <Text style={styles.optionText}>Njoftimet</Text>
+                    </View>
+                    <View>
+                      <Switch
+                      trackColor={{ false: "#d3d3d3", true: "#FF4C4C" }} 
+                      thumbColor={notificationsEnabled ? "#FFFFFF" : "#f4f3f4"}
                       onValueChange={toggleNotifications}
                       value={notificationsEnabled}
                       style={styles.customSwitch}
                     />
+                    </View>
+                  </View>
                   </View>
                 </View>
-
-                <View >
+                <View style={styles.supportSection}>
+                  <View style={styles.supportCenter}>
                   <Text style={styles.helpText}>{t('profile.help')}</Text>
                   <Text style={styles.support} onPress={handleEmailPress}>
                     support@jora.center
                   </Text>
                 </View>
+                </View>
               </View>
             </ScrollView>
-
             <Portal>
               <Dialog style={globalStyles.modal} visible={visible} onDismiss={hideDialog}>
                 <Dialog.Icon icon="alert" />
-                <Dialog.Title style={globalStyles.dialogTitle}>{t('modalRemove')}</Dialog.Title>
+                <Dialog.Title style={globalStyles.dialogTitle}>
+                  {t('modalRemove')}
+                  JO
+                  </Dialog.Title>
                 <Dialog.Content>
                   <Text style={globalStyles.dialogText}>{t('titleRemoveModal')}</Text>
                 </Dialog.Content>
                 <Dialog.Actions>
                   <Button style={globalStyles.dialogButton} onPress={hideDialog}>
-                    {t('no')}
+                    {/* {t('no')} */}
+                    JO
+                  </Button>
+                  <Button style={globalStyles.dialogButton} onPress={handleLogout}>
+                    {/* {t('no')} */}
+                    PO
                   </Button>
                 </Dialog.Actions>
               </Dialog>
@@ -263,6 +229,7 @@ const styles = StyleSheet.create({
     paddingVertical: 30,
     paddingHorizontal: 15,
     gap: 24.5,
+    position: 'relative',
   },
   header: {
     paddingVertical: 15,
@@ -288,6 +255,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '500',
     color: '#000',
+  },
+  optionSection:{
+    backgroundColor: '#FFFFFF',
+    marginVertical: 15,
   },
   profileSection: {},
   option: {
@@ -333,8 +304,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: '#1F1F1F',
-    marginBottom: 10,
+    padding: 15,
   },
+supportSection: {
+  width: '100%',
+  alignItems: 'flex-end',
+  marginTop: 30,
+  marginBottom: 30,
+},
+supportCenter: {
+  backgroundColor: '#FFFFFF',
+  paddingTop: 25,
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 183,
+  height: 76,
+  elevation: 2,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.04,
+  shadowRadius: 18,
+  position: 'absolute',
+  bottom: 100,
+},
   helpText: {
     fontWeight: '500',
     fontSize: 14,
@@ -357,8 +349,14 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginTop: 15,
   },
+  switchSection: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   customSwitch: {
-    transform: [{ scaleX: 1.2 }, { scaleY: 1.2 }], // Slightly enlarge the switch
+    transform: [{ scaleX: 1.2 }, { scaleY: 1.2 }], 
   },
   shoppingCart: {
     width: 42,

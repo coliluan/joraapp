@@ -162,8 +162,8 @@ const upload = multer({
 });
 
 app.use(cors());
-app.use(bodyParser.json());
-app.use(express.json()); 
+app.use(bodyParser.json({ limit: '20mb' }));
+app.use(express.json({ limit: '20mb' }));
 app.use(morgan('dev'));
 
 // Connect to MongoDB
@@ -976,7 +976,7 @@ app.post('/api/login', async (req, res) => {
 
 // 🏠 Update Address Endpoint
 app.put('/api/user/address', async (req, res) => {
-  const { firstName, address, postalCode, city } = req.body;
+  const { firstName, address, postalCode, city, email, number } = req.body;
 
   if (!firstName) {
     return res.status(400).json({ message: 'Emri është i kërkuar për azhurnim.' });
@@ -985,7 +985,7 @@ app.put('/api/user/address', async (req, res) => {
   try {
     const user = await UserModel.findOneAndUpdate(
       { firstName },
-      { address, postalCode, city },
+      { address, postalCode, city, email, number },
       { new: true }
     );
 
@@ -993,24 +993,24 @@ app.put('/api/user/address', async (req, res) => {
       return res.status(404).json({ message: 'Përdoruesi nuk u gjet.' });
     }
 
-    return res.status(200).json({ message: 'Adresa u ruajt me sukses!', user });
+    return res.status(200).json({ message: 'Të dhënat u ruajtën me sukses!', user });
   } catch (error) {
-    console.error('❌ Error updating address:', error);
+    console.error('❌ Error updating user:', error);
     return res.status(500).json({ message: 'Gabim në server.' });
   }
 });
 
 // 🖼️ Update Profile Photo Endpoint
 app.put('/api/user/photo', async (req, res) => {
-  const { firstName, photo } = req.body;
+  const { email, photo } = req.body;
 
-  if (!firstName || !photo) {
-    return res.status(400).json({ message: 'Emri dhe foto janë të nevojshme.' });
+  if (!email || !photo) {
+    return res.status(400).json({ message: 'Email dhe foto janë të nevojshme.' });
   }
 
   try {
     const user = await UserModel.findOneAndUpdate(
-      { firstName },
+      { email: email.toLowerCase() },
       { photo },
       { new: true }
     );
